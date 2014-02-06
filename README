@@ -1,0 +1,51 @@
+-------------------------------------------------------------------------------------------------------------
+Tool      : sdRNAprofiles
+Version   : v1.0
+Summary   : A tool for the de-novo discovery of small RNAs and derived RNA molecules, from small RNA-Seq data
+
+Usage     : sdrnaprofiles [OPTIONS] <srnaseq.bam> <output_folder>
+
+Output    : sdrnaprofiles will generate two files in the output_folder directory:
+            - output_folder/profiles.dat
+            - output_folder/crosscor.dat
+
+Options   :
+           -x     Minimum correlation
+                  Threshold for the cross-correlation value of the same contig between different replicates.
+                  Must be between [0,1].
+                  - Default is 0.99
+
+           -m     Minimum length
+                  Minimum length required to report a contig.
+                  Must be > 5.
+                  - Default is 15
+
+           -M     Maximum length
+                  Maximum length required to report a contig.
+                  Must be > 6.
+                  If -m option is present, maximum length must be greater than minimum length.
+                  - Default is 200
+
+           -s     Spacing
+                  Maximum space required between two reads to be considered part of the same contig.
+                  Must be 0 or a positive number
+                  - Default is 20
+
+           -r     Minimum number of reads
+                  Minimum number of reads required to report a contig.
+                  Must be 0 or a positive number.
+                  - Default is 10
+-------------------------------------------------------------------------------------------------------------
+Tool      : plotprofiles
+Version   : v1.0
+Summary   : A tool to draw sRNA profiles discovered using the sdrnaprofiles tool
+
+Usage     : plotprofiles [OPTIONS] <profiles.dat> <profile_name_1> [<profile_name_2> ... <profile_name_n>]
+
+Output    : plotprofiles will open a X11 window displaying the profile or will generate a png file
+
+Options   :
+           -o    PNG file.
+                 The plot will be printed in the specified PNG file.
+                 - Default behaviour is to open the plot in a system window
+-------------------------------------------------------------------------------------------------------------
