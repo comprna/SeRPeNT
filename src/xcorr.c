@@ -11,9 +11,10 @@ int nxcorr(double corr[], const double x[], size_t n_x, const double y[], size_t
   // Extend shorter signal with zeroes
   if (n_x > n_y) {
     length = n_x;
-    ext_x = (double*) x;
+    ext_x = (double*) malloc(n_x * sizeof(double));
     ext_y = (double*) malloc(n_x * sizeof(double));
     for (index = 0; index < n_x; index++) {
+      ext_x[index] = x[index];
       if (index < n_y)
         ext_y[index] = y[index];
       else
@@ -23,8 +24,9 @@ int nxcorr(double corr[], const double x[], size_t n_x, const double y[], size_t
   else if (n_x < n_y) {
     length = n_y;
     ext_x = (double*) malloc(n_y * sizeof(double));
-    ext_y = (double*) y;
+    ext_y = (double*) malloc(n_y * sizeof(double));
     for (index = 0; index < n_y; index++) {
+      ext_y[index] = y[index];
       if (index < n_x)
         ext_x[index] = x[index];
       else
@@ -33,8 +35,12 @@ int nxcorr(double corr[], const double x[], size_t n_x, const double y[], size_t
   }
   else {
     length = n_x;
-    ext_x = (double*) x;
-    ext_y = (double*) y;
+    ext_x = (double*) malloc(n_x * sizeof(double));
+    ext_y = (double*) malloc(n_y * sizeof(double));
+    for (index = 0; index < n_x; index++) {
+      ext_y[index] = y[index];
+      ext_x[index] = x[index];
+    }
   }
 
   // Calculate rxx and ryy at lag 0 for normalization
@@ -55,6 +61,9 @@ int nxcorr(double corr[], const double x[], size_t n_x, const double y[], size_t
     if (corr[lag] > corr[index])
       index = lag;
   }
+
+  free(ext_x);
+  free(ext_y);
 
   return index;
 }
