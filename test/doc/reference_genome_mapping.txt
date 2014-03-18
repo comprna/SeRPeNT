@@ -14,7 +14,7 @@
 +r008                                                  GAATCTCCGGCTGTTCTAAAAACCGATCCTCAACAG
 +r009                                                                                                AAGCCTTGAAGTACACCGTTAGCATTTAGCGGTGGAT
 +r010                                                                                                                                                          GGCCTTAGCGAGGATATGATGTTTCATTATACCCA
-+r011                                                                                                                                                          GGCCTTAGCGAGGATATGATGTTTCATTATACaat
++r011                                                                                                                                                          GGCCTTAGCGAGGATATGATGTTTCATTATACCat
 
                20        21        22        23        24        25        26        27        28        29        30
        12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
@@ -37,3 +37,26 @@
                20        21        22        23        24        25        26        27        28        29        30
        12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
        GTTCCATTTAGGACCATAGTACAAATGTACATGCCGGTTGTTACTAAGCAGGTGTTTGACCTGTCGACAACAATAGAAAAGGCCGTTTTGCCCTGATTAATATACTGCCA
+#reads
++r001   0       ref1    14      254     36M     *       0       0       AGTAAATATTTGACTGTTTTGCCATATCAACTTTTG    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r002   0       ref1    14      254     36M     *       0       0       AGTAAATATTTGACTGTTTTGCCATATCAACTTTTG    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r003   0       ref1    14      254     30M6S   *       0       0       AGTAAATATTTGACTGTTTTGCCATATCAAAAAAAA    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r004   0       ref1    14      254     40M     *       0       0       AGTAAATATTTGACTGTTTTGCCATATCAACTTTTGAATC        \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`RRRR
++r005   0       ref1    16      254     2S28M6S *       0       0       CCTAAATATTTGACTGTTTTGCCATATCAAAAAAAA    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r006   0       ref1    16      254     2S34M   *       0       0       CCTAAATATTTGACTGTTTTGCCATATCAACTTTTG    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r007   0       ref1    30      254     36M     *       0       0       TTTTGCCATATCAACTTTTGAATCTCCGGCTGTTCT    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
+-r001   16      ref1    34      254     35M1S   *       0       0       GCCATATCAACTTTTGAATCTCCGGCTGTTCTAAAA    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
+-r002   16      ref1    35      254     1S35M   *       0       0       ACCATATCAACTTTTGAATCTCCGGCTGTTCTAAAA    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r008   0       ref1    49      254     36M     *       0       0       GAATCTCCGGCTGTTCTAAAAACCGATCCTCAACAG    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r009   0       ref1    95      254     36M     *       0       0       CCTCAACAGCGGTGTTCCTAAGCCTTGAAGTACACC    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r010   0       ref1    152     254     36M     *       0       0       GGCCTTAGCGAGGATATGATGTTTCATTATACCCAC    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r011   0       ref1    152     254     34M2S   *       0       0       GGCCTTAGCGAGGATATGATGTTTCATTATACAATG    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
+-r003   16      ref1    191     254     36M     *       0       0       CTTCTCTTCAGCACGAGGAACTCGGACGTATCGAAG    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
+-r004   16      ref1    196     254     5S31M   *       0       0       AAAAACTTCAGCACGAGGAACTCGGACGTATCGAAG    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r012   0       ref2    10      254     36M     *       0       0       TCCTATCGCTCGCGCATAACAAGTCTCTGAAGCAAT    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r013   0       ref2    100     254     36M     *       0       0       TCACAATTCCGGAGTGTCTTTTAACCTGTTGAACAC    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r014   0       ref2    100     254     36M     *       0       0       TCACAATTCCGGAGTGTCTTTTAACCTGTTGAACAC    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r015   0       ref2    100     254     36M     *       0       0       TCACAATTCCGGAGTGTCTTTTAACCTGTTGAACAC    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r016   0       ref2    140     254     36M     *       0       0       CACTGCTGAATGGTCATGAATCATCACCTTAATCTA    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r017   0       ref2    140     254     36M     *       0       0       CACTGCTGAATGGTCATGAATCATCACCTTAATCTA    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
++r018   0       ref2    140     254     36M     *       0       0       CACTGCTGAATGGTCATGAATCATCACCTTAATCTA    \SZ]QZ\accc^^_MaQWZSH\I\TYYUXPZR_W\`
