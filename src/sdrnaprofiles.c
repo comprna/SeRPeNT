@@ -22,7 +22,7 @@ int parse_command_line(int argc, char** argv, char** error_message, args_struct*
   char carg;
   int terminate = 0;
 
-  while((carg = getopt(argc, argv, "x:m:M:s:r:")) != -1) {
+  while((carg = getopt(argc, argv, "x:m:M:s:r:t:")) != -1) {
     switch (carg) {
       case 'x':
         arguments->cutoff = (double) atof(optarg);
@@ -56,7 +56,14 @@ int parse_command_line(int argc, char** argv, char** error_message, args_struct*
         arguments->min_reads = (double) atof(optarg);
         if (arguments->min_reads < (double) 0) {
           terminate--;
-          *error_message = ERR_INVALID_s_VALUE;
+          *error_message = ERR_INVALID_r_VALUE;
+        }
+        break;
+      case 't':
+        arguments->trimming = atoi(optarg);;
+        if (arguments->trimming < 0) {
+          terminate--;
+          *error_message = ERR_INVALID_t_VALUE;
         }
         break;
       case '?':
@@ -209,31 +216,55 @@ int parse_alignment(const args_struct *arguments, const alignment_struct *alignm
     //       alignments        chr A                                > spacing   |------|
     //                         chr B  |--------|
     else {
+      int startfp, endtp, stop, i;
+
+      // Trim 5'-end
+      i = 0; stop = 0;
+      while (!stop) {
+        if (primary->profile[i] > arguments->trimming) {
+          stop++;
+          startfp = i;
+        }
+        else if (i == primary->end - primary->start) stop++;
+        else i++;
+      }
+
+      // Trim 3'-end
+      i = primary->end - primary->start; stop = 0;
+      while (!stop) {
+        if (primary->profile[i] > arguments->trimming) {
+          stop++;
+          endtp = i;
+        }
+        else if (i == 0) stop++;
+        else i--;
+      }
+
+      // Load profile if allowed by parameters
       if ((gsl_stats_max(primary->profile, 1, (primary->end - primary->start + 1)) >= arguments->min_reads) &&  // Contig has more than r reads
-          ((primary->end - primary->start + 1) >= arguments->min_len)                                       &&  // Contig has, at least, m nucleotides
-          ((primary->end - primary->start + 1) <= arguments->max_len))                                          // Contig has, at most, M nucleotides
+          ((endtp - startfp + 1) >= arguments->min_len)                                       &&  // Contig has, at least, m nucleotides
+          ((endtp - startfp + 1) <= arguments->max_len))                                          // Contig has, at most, M nucleotides
       {
-        int i;
-        current_profile->profile = (double*) malloc(sizeof(double) * (primary->end - primary->start + 1));
+        current_profile->profile = (double*) malloc(sizeof(double) * (endtp - startfp + 1));
         strncpy(current_profile->chromosome, primary->chromosome, MAX_FEATURE);
-        current_profile->start = primary->start;
-        current_profile->end = primary->end;
-        current_profile->length = (primary->end - primary->start + 1);
+        current_profile->start = primary->start + startfp;
+        current_profile->end = primary->start + endtp;
+        current_profile->length = (endtp - startfp + 1);
         current_profile->strand = alignment->strand;
         if (alignment->strand == FWD_STRAND) {
-          fprintf(output, "%s:%d-%d:+", primary->chromosome, primary->start, primary->end);
-          int i;
-          for (i = 0; i < (primary->end - primary->start + 1); i++) {
-            current_profile->profile[i] = primary->profile[i];
-            fprintf(output, "\t%f", primary->profile[i]);
+          fprintf(output, "%s:%d-%d:+", primary->chromosome, primary->start + startfp, primary->start + endtp);
+          for (i = 0; i < (endtp - startfp + 1); i++) {
+            current_profile->profile[i] = primary->profile[i + startfp];
+            fprintf(output, "\t%f", primary->profile[i + startfp]);
           }
           fprintf(output, "\n");
         }
         else {
-          fprintf(output, "%s:%d-%d:-", primary->chromosome, primary->start, primary->end);
-          int i;
-          for (i = (primary->end - primary->start); i >= 0; i--) {
-            current_profile->profile[i] = primary->profile[i];
+          fprintf(output, "%s:%d-%d:-", primary->chromosome, primary->start + startfp, primary->start + endtp);
+          int j = 0;
+          for (i = endtp; i >= startfp; i--) {
+            current_profile->profile[j] = primary->profile[i];
+            j++;
             fprintf(output, "\t%f", primary->profile[i]);
           }
           fprintf(output, "\n");
@@ -246,7 +277,6 @@ int parse_alignment(const args_struct *arguments, const alignment_struct *alignm
       double *profile_realloc = (double*) realloc(primary->profile, sizeof(double) * (primary->end - primary->start + 1));
       if (profile_realloc == NULL)
         return(1);
-      int i;
       primary->profile = profile_realloc;
       for (i = 0; i < (primary->end - primary->start + 1); i++) primary->profile[i] = 1;
     }
@@ -293,7 +323,8 @@ int main(int argc, char** argv)
   char* error_message;                                  // Error message to display in case of abnormal termination
   profile_struct profiles[MAX_CONTIGS];                 // Array of profile_struct structs
   contig_struct contig_fwd, contig_rev;                 // Struct for building profiles
-  int i, j;                                             // Multi-purpose indexes
+  int i, j, stop;                                       // Multi-purpose indexes and checkpoint variables
+  int startfp, endtp;                                   // Auxiliar variables for trimming
 
   // Initialize options with default values. Parse command line.
   // Exit if command is not well-formed.
@@ -372,39 +403,86 @@ int main(int argc, char** argv)
     return(1);
   }
 
+  // Trim 5'-end of the forward contig struct
+  i = 0; stop = 0;
+  while (!stop) {
+    if (contig_fwd.profile[i] > arguments.trimming) {
+      stop++;
+      startfp = i;
+    }
+    else if (i == contig_fwd.end - contig_fwd.start) stop++;
+    else i++;
+  }
+
+  // Trim 3'-end of the forward contig struct
+  i = contig_fwd.end - contig_fwd.start; stop = 0;
+  while (!stop) {
+    if (contig_fwd.profile[i] > arguments.trimming) {
+      stop++;
+      endtp = i;
+    }
+    else if (i == 0) stop++;
+    else i--;
+  }
+
   // Flush the contents in the forward contig struct
   if ((gsl_stats_max(contig_fwd.profile, 1, (contig_fwd.end - contig_fwd.start + 1)) >= arguments.min_reads) &&  // Contig has more than r reads
-      ((contig_fwd.end - contig_fwd.start + 1) >= arguments.min_len)                                         &&  // Contig has, at least, m nucleotides
-      ((contig_fwd.end - contig_fwd.start + 1) <= arguments.max_len))                                            // Contig has, at most, M nucleotides
+      ((endtp - startfp + 1) >= arguments.min_len)                                                           &&  // Contig has, at least, m nucleotides
+      ((endtp - startfp + 1) <= arguments.max_len))                                                              // Contig has, at most, M nucleotides
   {
-    profiles[index].profile = (double*) malloc(sizeof(double) * (contig_fwd.end - contig_fwd.start + 1));
-    memcpy(profiles[index].profile, contig_fwd.profile, (contig_fwd.end - contig_fwd.start + 1) * sizeof(double));
+    profiles[index].profile = (double*) malloc(sizeof(double) * (endtp - startfp + 1));
     strncpy(profiles[index].chromosome, contig_fwd.chromosome, MAX_FEATURE);
-    profiles[index].start = contig_fwd.start;
-    profiles[index].end = contig_fwd.end;
-    profiles[index].length = (contig_fwd.end - contig_fwd.start + 1);
+    profiles[index].start = contig_fwd.start + startfp;
+    profiles[index].end = contig_fwd.start + endtp;
+    profiles[index].length = (endtp - startfp + 1);
     profiles[index].strand = alignment.strand;
-    fprintf(profiles_file, "%s:%d-%d:+", contig_fwd.chromosome, contig_fwd.start, contig_fwd.end);
-    for (i = 0; i < (contig_fwd.end - contig_fwd.start + 1); i++)
-      fprintf(profiles_file, "\t%f", contig_fwd.profile[i]);
+    fprintf(profiles_file, "%s:%d-%d:+", contig_fwd.chromosome, contig_fwd.start + startfp, contig_fwd.start + endtp);
+    for (i = 0; i < (endtp - startfp + 1); i++) {
+      profiles[index].profile[i] = contig_fwd.profile[i + startfp];
+      fprintf(profiles_file, "\t%f", contig_fwd.profile[i + startfp]);
+    }
     fprintf(profiles_file, "\n");
     index++;
   }
 
+  // Trim 5'-end of the reverse contig struct
+  i = 0; stop = 0;
+  while (!stop) {
+    if (contig_rev.profile[i] > arguments.trimming) {
+      stop++;
+      startfp = i;
+    }
+    else if (i == contig_rev.end - contig_rev.start) stop++;
+    else i++;
+  }
+
+  // Trim 3'-end of the reverse contig struct
+  i = contig_rev.end - contig_rev.start; stop = 0;
+  while (!stop) {
+    if (contig_rev.profile[i] > arguments.trimming) {
+      stop++;
+      endtp = i;
+    }
+    else if (i == 0) stop++;
+    else i--;
+  }
+
   // Flush the contents in the reverse contig struct
   if ((gsl_stats_max(contig_rev.profile, 1, (contig_rev.end - contig_rev.start + 1)) >= arguments.min_reads) &&  // Contig has more than r reads
-      ((contig_rev.end - contig_rev.start + 1) >= arguments.min_len)                                         &&  // Contig has, at least, m nucleotides
-      ((contig_rev.end - contig_rev.start + 1) <= arguments.max_len))                                            // Contig has, at most, M nucleotides
+      ((endtp - startfp + 1) >= arguments.min_len)                                                           &&  // Contig has, at least, m nucleotides
+      ((endtp - startfp + 1) <= arguments.max_len))                                                              // Contig has, at most, M nucleotides
   {
-    profiles[index].profile = (double*) malloc(sizeof(double) * (contig_rev.end - contig_rev.start + 1));
+    profiles[index].profile = (double*) malloc(sizeof(double) * (endtp - startfp + 1));
     strncpy(profiles[index].chromosome, contig_rev.chromosome, MAX_FEATURE);
-    profiles[index].start = contig_rev.start;
-    profiles[index].end = contig_rev.end;
-    profiles[index].length = (contig_rev.end - contig_rev.start + 1);
+    profiles[index].start = contig_rev.start + startfp;
+    profiles[index].end = contig_rev.start + endtp;
+    profiles[index].length = (endtp - startfp + 1);
     profiles[index].strand = alignment.strand;
-    fprintf(profiles_file, "%s:%d-%d:-", contig_rev.chromosome, contig_rev.start, contig_rev.end);
-    for (i = contig_rev.end - contig_rev.start; i >= 0; i--) {
-      profiles[index].profile[i] = contig_rev.profile[i];
+    fprintf(profiles_file, "%s:%d-%d:-", contig_rev.chromosome, contig_rev.start + startfp, contig_rev.start + endtp);
+    j = 0;
+    for (i = endtp; i >= startfp; i--) {
+      profiles[index].profile[j] = contig_rev.profile[i];
+      j++;
       fprintf(profiles_file, "\t%f", contig_rev.profile[i]);
     }
     fprintf(profiles_file, "\n");

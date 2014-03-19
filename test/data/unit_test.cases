@@ -35,12 +35,18 @@ OUT	Unrecognized option or argument missing
 CAE	Invalid optional argument for -s parameter
 CMD	$1 -x 0.99 -m 15 -M 200 $2 $3 -s -1
 OUT	Invalid argument for option -s
-CAE     No optional argument for -r parameter
-CMD     $1 -x 0.99 -m 15 -M 200 -s 50 $2 $3 -r
-OUT     Unrecognized option or argument missing
-CAE     Invalid optional argument for -r parameter
-CMD     $1 -x 0.99 -m 15 -M 200 -s 50 $2 $3 -r -1
-OUT     Invalid argument for option -r
+CAE	No optional argument for -r parameter
+CMD	$1 -x 0.99 -m 15 -M 200 -s 50 $2 $3 -r
+OUT	Unrecognized option or argument missing
+CAE	Invalid optional argument for -r parameter
+CMD	$1 -x 0.99 -m 15 -M 200 -s 50 $2 $3 -r -1
+OUT	Invalid argument for option -r
+CAE	No optional argument for -t parameter
+CMD	$1 -x 0.99 -m 15 -M 200 -s 50 $2 $3 -r 2 -t
+OUT	Unrecognized option or argument missing
+CAE	Invalid optional argument for -t parameter
+CMD	$1 -x 0.99 -m 15 -M 200 -s 50 $2 $3 -r 2 -t -2
+OUT	Invalid argument for option -t
 UTM	FILES
 CAE	Replicate BAM files do not exist or are not valid
 CMD	$1 /voidfolder/7yernnvjkd.ghost $3 -x 0.99 -m 15 -M 200 -s 50
@@ -50,5 +56,5 @@ CMD	$1 $2 /voidfolder/7yernnvjkd/out.dat -x 0.99 -m 15 -M 200 -s 50
 OUT	Output path is not valid or output file is not writable
 UTM	RESULTS
 CAE	Everything works with test data
-CMD	$1 $2 $3 -x 0.99 -m 15 -M 200 -s 10 -r 2
+CMD	$1 $2 $3 -x 0.99 -m 15 -M 200 -s 10 -r 2 -t 1
 OUT	Success

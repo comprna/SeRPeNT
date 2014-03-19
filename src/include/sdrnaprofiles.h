@@ -57,6 +57,10 @@
  */
 #define MIN_READS 10.0f
 /*
+ * Default value for -t option
+ */
+#define TRIMMING 1
+/*
  * Alignment in forward/watson strand
  */
 #define FWD_STRAND 0
@@ -85,6 +89,7 @@
  */
 #define PROFILES_SUFFIX "profiles.dat"
 #define CROSSCOR_SUFFIX "crosscor.dat"
+#define CLUSTERS_SUFFIX "clusters.dat"
 
 /*
  * Struct for handling command line arguments
@@ -97,6 +102,7 @@ typedef struct {
   double cutoff;
   int spacing;
   double min_reads;
+  int trimming;
 } args_struct;
 
 /*

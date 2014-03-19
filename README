@@ -5,9 +5,10 @@ Summary   : A tool for the de-novo discovery of small RNAs and derived RNA molec
 
 Usage     : sdrnaprofiles [OPTIONS] <srnaseq.bam> <output_folder>
 
-Output    : sdrnaprofiles will generate two files in the output_folder directory:
+Output    : sdrnaprofiles will generate three files in the output_folder directory:
             - output_folder/profiles.dat
             - output_folder/crosscor.dat
+            - output_folder/clusters.dat
 
 Options   :
            -x     Minimum correlation
@@ -35,6 +36,12 @@ Options   :
                   Minimum number of reads required to report a contig.
                   Must be 0 or a positive number.
                   - Default is 10
+
+           -t     Trimming threshold
+                  Trim nucleotides in the 5'- and 3'-ends of the contig that have -t reads or less
+                  Must be 0 or a positive number
+                  - Default is 2
+                  
 -------------------------------------------------------------------------------------------------------------
 Tool      : plotprofiles
 Version   : v1.0

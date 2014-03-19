@@ -16,8 +16,8 @@ compile : xcorr.o sdrnaprofiles.o gnuplot_i.o plotprofiles.o
 	$(CC) -o plotprofiles $(OBJS_PLOT) -Llib/
 
 debug : setup
-	$(CC) -c src/xcorr.c -Isrc/include/ -o build/xcorr.o -DDEBUG 
-	$(CC) -c src/sdrnaprofiles.c -Isrc/include/ -Isrc/include/samtools -o build/sdrnaprofiles.o -DDEBUG
+	$(CC) -g -O1 -c src/xcorr.c -Isrc/include/ -o build/xcorr.o -DDEBUG 
+	$(CC) -g -O1 -c src/sdrnaprofiles.c -Isrc/include/ -Isrc/include/samtools -o build/sdrnaprofiles.o -DDEBUG
 	$(CC) -o sdrnaprofiles $(OBJS) -Llib/ -lgsl -lgslcblas -lm -lz -lpthread -lbam -lapcluster
 
 plotprofiles.o: setup

@@ -27,7 +27,11 @@ Options   :\n\
            -s     Spacing\n\
                   Maximum space required between two reads to be considered part of the same contig.\n\
                   Must be 0 or a positive number.\n\
-                  - Default is 20"
+                  - Default is 20\n\
+           -t     Trimming threshold\n\
+                  Trim nucleotides in the 5'- and 3'-ends of the contig that have -t reads or less.\n\
+                  Must be 0 or a positive number.\n\
+                  - Default is 2"
 /*
  * ERROR : Bad syntax message for plotprofiles
  */
@@ -65,6 +69,10 @@ Options   :\n\
  * ERROR : Invalid argument for -r option
  */
 #define ERR_INVALID_r_VALUE "Invalid argument for option -r"
+/*
+ * ERROR : Invalid argument for -t option
+ */
+#define ERR_INVALID_t_VALUE "Invalid argument for option -t"
 /*
  * ERROR : Unrecognized option or argument missing
  */
