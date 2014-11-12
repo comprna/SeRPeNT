@@ -1,43 +1,74 @@
 CC = gcc
-OBJS = build/xcorr.o build/sdrnaprofiles.o
-OBJS_PLOT = build/gnuplot_i.o build/plotprofiles.o
+CFLAGS = -g -c -Wall
+OBJS = build/profiles.o build/paramprof.o build/bheap.o build/idr.o build/xcorr.o build/iofile.o build/paramclust.o build/cluster.o build/hierarchical.o build/itvltree.o build/profilemap.o build/annotate.o
 
-all : benchmark
+all : srnap
 
-benchmark : compile
-	./sdrnaprofiles bnm/positive_set.bed bnm/positive_set_r1.bg bnm/positive_set_r2.bg -c 0.01 -m 18 -M 30 report
 
-test : debug
-	perl test/src/unit_test.pl test/data/unit_test.cases test/report/unit_test.dat ./sdrnaprofiles test/data/positive_set.bam test/report
-	cat test/report/unit_test.dat
+# Build and compile executables
  
-compile : xcorr.o sdrnaprofiles.o gnuplot_i.o plotprofiles.o
-	$(CC) -o sdrnaprofiles $(OBJS) -Llib/ -lgsl -lgslcblas -lm -lz -lpthread -lbam -lapcluster
-	$(CC) -o plotprofiles $(OBJS_PLOT) -Llib/
+srnap : profiles.o annotate.o srnap.o
+	$(CC) -o bin/srnap $(OBJS) build/srnap.o -Llib/ -lgsl -lgslcblas -lm -lz -lpthread -lbam 
 
-debug : setup
-	$(CC) -g -O1 -c src/xcorr.c -Isrc/include/ -o build/xcorr.o -DDEBUG 
-	$(CC) -g -O1 -c src/sdrnaprofiles.c -Isrc/include/ -Isrc/include/samtools -o build/sdrnaprofiles.o -DDEBUG
-	$(CC) -o sdrnaprofiles $(OBJS) -Llib/ -lgsl -lgslcblas -lm -lz -lpthread -lbam -lapcluster
+srnap.o : setup
+	$(CC) $(CFLAGS) src/srnap.c -Isrc/include -o build/srnap.o
 
-plotprofiles.o: setup
-	$(CC) -c src/plotprofiles.c -Isrc/include -o build/plotprofiles.o
+# Unit test
 
-sdrnaprofiles.o : setup
-	$(CC) -c src/sdrnaprofiles.c -Isrc/include/ -Isrc/include/samtools -o build/sdrnaprofiles.o
+utest: profiles.o annotate.o utest.o
+	gcc -o bin/utest -L/home/apages/tools/lcut-0.3.0/lib/ -Llib/ $(OBJS) build/utest.o -llcut -lgsl -lgslcblas -lm -lz -lpthread -lbam
+
+utest.o:
+	$(CC) $(CFLAGS) test/src/utest.c -Isrc/include/ -I/home/apages/tools/lcut-0.3.0/include/ -o build/utest.o
+
+
+# Compile shared objects
+
+annotate.o : paramclust.o xcorr.o iofile.o hierarchical.o profilemap.o
+	$(CC) $(CFLAGS) src/annotate/annotate.c -Isrc/include -o build/annotate.o
+
+profilemap.o : itvltree.o
+	$(CC) $(CFLAGS) src/annotate/profilemap.c -Isrc/include/ -o build/profilemap.o
+
+hierarchical.o : cluster.o
+	$(CC) $(CFLAGS) src/annotate/hierarchical.c -Isrc/include -o build/hierarchical.o
+
+cluster.o : setup
+	$(CC) $(CFLAGS) src/annotate/cluster.c -Isrc/include -o build/cluster.o
+
+paramclust.o : setup
+	$(CC) $(CFLAGS) src/annotate/paramclust.c -Isrc/include -o build/paramclust.o
 
 xcorr.o : setup
-	$(CC) -c src/xcorr.c -Isrc/include/ -o build/xcorr.o
+	$(CC) $(CFLAGS) src/annotate/xcorr.c -Isrc/include/ -o build/xcorr.o
 
-gnuplot_i.o: setup
-	$(CC) -c src/gnuplot_i.c  -Isrc/include  -o build/gnuplot_i.o
+iofile.o : setup
+	$(CC) $(CFLAGS) src/annotate/iofile.c -Isrc/include/ -o build/iofile.o
+
+itvltree.o : setup
+	$(CC) $(CFLAGS) src/annotate/itvltree.c -Isrc/include/ -o build/itvltree.o
+
+profiles.o : paramprof.o bheap.o idr.o
+	$(CC) $(CFLAGS) src/profiles/profiles.c -Isrc/include -o build/profiles.o
+
+paramprof.o : setup
+	$(CC) $(CFLAGS) src/profiles/paramprof.c -Isrc/include -o build/paramprof.o
+
+bheap.o : setup
+	$(CC) $(CFLAGS) src/profiles/bheap.c -Isrc/include -o build/bheap.o
+
+idr.o : setup
+	$(CC) $(CFLAGS) src/profiles/idr.c -Isrc/include -o build/idr.o
+
+
+# Prepare build environment
 
 setup:
 	mkdir -p build
+	mkdir -p bin
 
 .PHONY : clean
 clean :
-	rm -rf build/*
-	rm sdrnaprofiles
-	rm plotprofiles
+	rm -rf build
+	rm -rf bin
 	rm -rf test/report/*

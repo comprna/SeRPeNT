@@ -1,58 +1,94 @@
--------------------------------------------------------------------------------------------------------------
-Tool      : sdRNAprofiles
-Version   : v1.0
-Summary   : A tool for the de-novo discovery of small RNAs and derived RNA molecules, from small RNA-Seq data
+=================================================================================================================================================================================================
+srnap version 1.0.0
+=================================================================================================================================================================================================
+srnap - A suite of tools for ncRNA discovery, profiling and annotation from small RNA-Seq data
 
-Usage     : sdrnaprofiles [OPTIONS] <srnaseq.bam> <output_folder>
+The srnap subcommands include:
+  [ Profiling tools ]
+    profiles    ncRNA discovery and profiling from small RNA-Seq data
+    annotate    ncRNA clustering, classification and annotation from profiles
 
-Output    : sdrnaprofiles will generate three files in the output_folder directory:
-            - output_folder/profiles.dat
-            - output_folder/crosscor.dat
-            - output_folder/clusters.dat
+  [ General help ]
+    -h, --help     Print this help menu
+    -v, --version  What version of srnap are you using?
 
-Options   :
-           -x     Minimum correlation
-                  Threshold for the cross-correlation value of the same contig between different replicates.
-                  Must be between [0,1].
-                  - Default is 0.99
+Example : 
+          srnap profiles replicate1.bam replicate2.bam replicate3.bam output_dir
+          srnap annotate output_dir/profiles.dat annotation.gtf output_dir
 
-           -m     Minimum length
-                  Minimum length required to report a contig.
-                  Must be > 5.
-                  - Default is 15
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Tool      : profiles
 
-           -M     Maximum length
-                  Maximum length required to report a contig.
-                  Must be > 6.
-                  If -m option is present, maximum length must be greater than minimum length.
-                  - Default is 200
+Summary   : ncRNA discovery and profiling from small RNA-Seq data
 
-           -s     Spacing
-                  Maximum space required between two reads to be considered part of the same contig.
-                  Must be 0 or a positive number
-                  - Default is 20
-
-           -r     Minimum number of reads
-                  Minimum number of reads required to report a contig.
-                  Must be 0 or a positive number.
-                  - Default is 10
-
-           -t     Trimming threshold
-                  Trim nucleotides in the 5'- and 3'-ends of the contig that have -t reads or less
-                  Must be 0 or a positive number
-                  - Default is 2
-                  
--------------------------------------------------------------------------------------------------------------
-Tool      : plotprofiles
-Version   : v1.0
-Summary   : A tool to draw sRNA profiles discovered using the sdrnaprofiles tool
-
-Usage     : plotprofiles [OPTIONS] <profiles.dat> <profile_name_1> [<profile_name_2> ... <profile_name_n>]
-
-Output    : plotprofiles will open a X11 window displaying the profile or will generate a png file
+Usage     : srnap profiles [OPTIONS] replicate_1.bam ... replicate_n.bam output_folder
 
 Options   :
-           -o    PNG file.
-                 The plot will be printed in the specified PNG file.
-                 - Default behaviour is to open the plot in a system window
--------------------------------------------------------------------------------------------------------------
+           -l, --length      Length of the single-end reads
+                             [ Default is 200 ]
+
+           -c, --contigs     Profile definition
+                             Format is <minlen:maxlen:spacing:minheight:trimming>, where:
+                               - <minlen> is the minimum length of the contig. Contigs shorter than <minlen> are not reported. Must be > 5.
+                               - <maxlen> is the maximum length of the contig. Contigs longer than <maxlen> are not reported. Must be > minlen.
+                               - <spacing> is the maximum distance between contigs. Contigs separated by <spacing> or less bp are considered the same contig. Must be >= 0.
+                               - <minheight> is the minimum number of piled-up reads. Contigs that have less than <minheight> piled-up reads are not reported. Must be > 0.
+                               - <trimming> is the number of bases to trim. Bases in the 5' and 3' sites of the contig that have less than <trimming> piled-up reads are trimmed. Must be >= 0.
+                             [ Default is 16:200:20:50:5 ]
+
+           -r, --replicates  Replicates treatment
+                             Format is <pool> | <mean> | <replicate:number>, where:
+                               - <pool> : Profiles are built by pooling the reads of all the replicates.
+                               - <mean> : Profiles are built by averaging the reads of all the replicates.
+                               - <replicate:number> : Profiles are built by using only the reads of one replicate.
+                             [ Default is pool ]
+
+           -i, --ic          Irreproducibility control
+                             Format is <method:cutoff> | <common> | <none>, where:
+                               - <method> is the irreproducibility control method. Options are:
+                                 - sere : Single-parameter quality control. (Schulze et al. BMC Genomics 2012)
+                                 - idr  : Irreproducibility discovery rate. (Li et al. The Annals of Applied Statistics 2011)
+                               - <cutoff> is the cutoff value. Contigs that have an irreproducibility score higher than <cutoff> are not reported.
+                               - <common> : Contigs that do not overlap in all the replicates are not reported.
+                               - <none>   : All contigs are reported.
+                             [ Default is common ]
+
+Output    :
+           output_folder/profiles.dat : List of ncRNA profiles with per-base heights
+           output_folder/contigs.dat  : List of unfiltered contigs
+
+Example   :
+           srnap profiles -c 20:200:20:50:5 -r pool -i sere:2 replicate1.bam replicate2.bam output_dir
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Tool      : annotate
+
+Summary   : ncRNA clustering, classification and annotation from profile data
+
+Usage     : srnap annotate [OPTIONS] profiles_file.dat output_folder
+
+Options   : 
+            -a, --afile      Annotation file
+                             Format is <annotation_file>, where:
+                               - <annotation_file> is a BED file with annotated features
+                             [ No default value ]
+
+            -p, --pfile      Additional profiles file
+                             Format is <species:profiles_file>, where:
+                               - <species> is the name of the species where the profiles comes from. e.g. hsap.
+                               - <profiles_file> is a profiles file
+                             [ No default value ]
+
+            -t, --threshold  Threshold for label propagation
+                             Format is <threshold>, where:
+                               - <threshold> is the threshold of the hierarchical clustering distance
+                             [ Default is 0.80 ]
+
+Output    :
+           output_folder/crosscorr.dat    : List of cross correlation coefficients between pairs of profiles
+           output_folder/clusters.neWick  : List of clustered profiles
+           output_folder/annotation.bed   : List of annotated features in BED file (only if annotation file is provided)
+
+Example   :
+           srnap annotate -t 0.95 -a hsap_micrornas.bed profiles.dat output_dir
+           srnap annotate -a hsap_micrornas.bed -p hsap:hsap_profiles.dat profiles.dat output_dir
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
