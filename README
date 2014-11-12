@@ -18,8 +18,8 @@ The srnap subcommands include:
 
 **Examples** :
 
-          srnap profiles replicate1.bam replicate2.bam replicate3.bam output_dir
-          srnap annotate output_dir/profiles.dat annotation.gtf output_dir
+    srnap profiles replicate1.bam replicate2.bam replicate3.bam output_dir
+    srnap annotate output_dir/profiles.dat annotation.gtf output_dir
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Tool** : profiles
@@ -107,6 +107,6 @@ The srnap subcommands include:
 
 **Example** :
 
-           srnap annotate -t 0.95 -a hsap_micrornas.bed profiles.dat output_dir
-           srnap annotate -a hsap_micrornas.bed -p hsap:hsap_profiles.dat profiles.dat output_dir
+    srnap annotate -t 0.95 -a hsap_micrornas.bed profiles.dat output_dir
+    srnap annotate -a hsap_micrornas.bed -p hsap:hsap_profiles.dat profiles.dat output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
