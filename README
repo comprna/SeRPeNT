@@ -1,28 +1,37 @@
-**srnap - A suite of tools for ncRNA discovery, profiling and annotation from small RNA-Seq data**
+## **srnap** - A suite of tools for ncRNA discovery, profiling and annotation from small RNA-Seq data ##
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 The srnap subcommands include:
 
-* Profiling and annotation tools
-profiles    ncRNA discovery and profiling from small RNA-Seq data
-annotate    ncRNA clustering, classification and annotation from profiles
+**Profiling and annotation tools** :
 
+  profiles : ncRNA discovery and profiling from small RNA-Seq data
 
-  [ General help ]
-    -h, --help     Print this help menu
-    -v, --version  What version of srnap are you using?
+  annotate : ncRNA clustering, classification and annotation from profiles
 
-Example : 
+**General help** :
+
+  -h, --help :  Print this help menu
+
+  -v, --version : What version of srnap are you using?
+
+**Examples** :
+
           srnap profiles replicate1.bam replicate2.bam replicate3.bam output_dir
           srnap annotate output_dir/profiles.dat annotation.gtf output_dir
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Tool      : profiles
+**Tool** : profiles
 
-Summary   : ncRNA discovery and profiling from small RNA-Seq data
+**Summary** : ncRNA discovery and profiling from small RNA-Seq data
 
-Usage     : srnap profiles [OPTIONS] replicate_1.bam ... replicate_n.bam output_folder
+**Usage** :
 
-Options   :
+    srnap profiles [OPTIONS] replicate_1.bam ... replicate_n.bam output_folder
+
+**Options**  :
+
            -l, --length      Length of the single-end reads
                              [ Default is 200 ]
 
@@ -52,12 +61,15 @@ Options   :
                                - <none>   : All contigs are reported.
                              [ Default is common ]
 
-Output    :
-           output_folder/profiles.dat : List of ncRNA profiles with per-base heights
-           output_folder/contigs.dat  : List of unfiltered contigs
+**Output** :
 
-Example   :
-           srnap profiles -c 20:200:20:50:5 -r pool -i sere:2 replicate1.bam replicate2.bam output_dir
+  output_folder/profiles.dat : List of ncRNA profiles with per-base heights
+
+  output_folder/contigs.dat  : List of unfiltered contigs
+
+**Examples** : 
+
+    srnap profiles -c 20:200:20:50:5 -r pool -i sere:2 replicate1.bam replicate2.bam output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Tool      : annotate
 
