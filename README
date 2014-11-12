@@ -71,13 +71,16 @@ The srnap subcommands include:
 
     srnap profiles -c 20:200:20:50:5 -r pool -i sere:2 replicate1.bam replicate2.bam output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Tool      : annotate
+**Tool** : annotate
 
-Summary   : ncRNA clustering, classification and annotation from profile data
+**Summary** : ncRNA clustering, classification and annotation from profile data
 
-Usage     : srnap annotate [OPTIONS] profiles_file.dat output_folder
+**Usage** :
 
-Options   : 
+    srnap annotate [OPTIONS] profiles_file.dat output_folder
+
+**Options** : 
+
             -a, --afile      Annotation file
                              Format is <annotation_file>, where:
                                - <annotation_file> is a BED file with annotated features
@@ -94,12 +97,16 @@ Options   :
                                - <threshold> is the threshold of the hierarchical clustering distance
                              [ Default is 0.80 ]
 
-Output    :
-           output_folder/crosscorr.dat    : List of cross correlation coefficients between pairs of profiles
-           output_folder/clusters.neWick  : List of clustered profiles
-           output_folder/annotation.bed   : List of annotated features in BED file (only if annotation file is provided)
+**Output** :
 
-Example   :
+  output_folder/crosscorr.dat    : List of cross correlation coefficients between pairs of profiles
+
+  output_folder/clusters.neWick  : List of clustered profiles
+
+  output_folder/annotation.bed   : List of annotated features in BED file (only if annotation file is provided)
+
+**Example** :
+
            srnap annotate -t 0.95 -a hsap_micrornas.bed profiles.dat output_dir
            srnap annotate -a hsap_micrornas.bed -p hsap:hsap_profiles.dat profiles.dat output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
