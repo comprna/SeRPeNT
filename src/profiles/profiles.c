@@ -89,7 +89,7 @@ int parse_alignment(const args_p_struct *arguments, const alignment_struct *alig
     primary->nreads = (int*) malloc(sizeof(int) * (arguments->number_replicates));
     int i;
     if ((arguments->replicate_treat != REPLICATE_REPLICATE) || ((arguments->replicate_treat == REPLICATE_REPLICATE) && ((arguments->replicate_number - 1) == alignment->replicate)))
-      for (i = 0; i < (primary->end - primary->start + 1); i++) primary->profile[i] = alignment->nreads;//TODO 1;
+      for (i = 0; i < (primary->end - primary->start + 1); i++) primary->profile[i] = alignment->nreads;
     for (i = 0; i < arguments->number_replicates; i++) primary->nreads[i] = 0;
     primary->nreads[alignment->replicate] += alignment->nreads;
   }
@@ -105,7 +105,7 @@ int parse_alignment(const args_p_struct *arguments, const alignment_struct *alig
     if (strcmp(alignment->chromosome, primary->chromosome) == 0 && alignment->end <= primary->end && alignment->end > primary->start) {
       int i;
       if ((arguments->replicate_treat != REPLICATE_REPLICATE) || ((arguments->replicate_treat == REPLICATE_REPLICATE) && ((arguments->replicate_number - 1) == alignment->replicate)))
-        for (i = alignment->start - primary->start; i < (alignment->end - primary->start + 1); i++) primary->profile[i] += alignment->nreads;//TODO ++;
+        for (i = alignment->start - primary->start; i < (alignment->end - primary->start + 1); i++) primary->profile[i] += alignment->nreads;
       primary->nreads[alignment->replicate] += alignment->nreads;
     }
 
@@ -124,7 +124,7 @@ int parse_alignment(const args_p_struct *arguments, const alignment_struct *alig
       int i;
       for (i = (primary->end - primary->start + 1); i < (alignment->end - primary->start + 1); i++) primary->profile[i] = 0;
       if ((arguments->replicate_treat != REPLICATE_REPLICATE) || ((arguments->replicate_treat == REPLICATE_REPLICATE) && ((arguments->replicate_number - 1) == alignment->replicate)))
-        for (i = (alignment->start - primary->start); i < (alignment->end - primary->start + 1); i++) primary->profile[i] += alignment->nreads;//TODO ++;
+        for (i = (alignment->start - primary->start); i < (alignment->end - primary->start + 1); i++) primary->profile[i] += alignment->nreads;
       primary->end = alignment->end;
       primary->nreads[alignment->replicate] += alignment->nreads;
     }
@@ -174,7 +174,7 @@ int parse_alignment(const args_p_struct *arguments, const alignment_struct *alig
         return(1);
       primary->profile = profile_realloc;
       if ((arguments->replicate_treat != REPLICATE_REPLICATE) || ((arguments->replicate_treat == REPLICATE_REPLICATE) && ((arguments->replicate_number - 1) == alignment->replicate)))
-        for (i = 0; i < (primary->end - primary->start + 1); i++) primary->profile[i] = alignment->nreads;//TODO 1;
+        for (i = 0; i < (primary->end - primary->start + 1); i++) primary->profile[i] = alignment->nreads;
       for (i = 0; i < arguments->number_replicates; i++) primary->nreads[i] = 0;
       primary->nreads[alignment->replicate] += alignment->nreads;
     }
@@ -506,7 +506,7 @@ int profiles_sc(int argc, char **argv)
   {
     profiles[index].valid = 1;
     profiles[index].profile = (double*) malloc(sizeof(double) * (contig_fwd.end - contig_fwd.start + 1));
-    for (i = 0; i < (contig_rev.end - contig_rev.start + 1); i++) {
+    for (i = 0; i < (contig_fwd.end - contig_fwd.start + 1); i++) {
       if (arguments.replicate_treat == REPLICATE_MEAN)
         profiles[index].profile[i] = contig_fwd.profile[i] / ((double) arguments.number_replicates);
       else
