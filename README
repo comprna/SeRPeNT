@@ -1,7 +1,4 @@
-======================================================================================================================================================================
-srnap version 1.0.0
-======================================================================================================================================================================
-srnap - A suite of tools for ncRNA discovery, profiling and annotation from small RNA-Seq data
+**srnap - A suite of tools for ncRNA discovery, profiling and annotation from small RNA-Seq data**
 
 The srnap subcommands include:
   [ Profiling tools ]
