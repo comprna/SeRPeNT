@@ -2,10 +2,9 @@
 
 The srnap subcommands include:
 
-  [ Profiling tools ]
-    profiles    ncRNA discovery and profiling from small RNA-Seq data
-
-    annotate    ncRNA clustering, classification and annotation from profiles
+* Profiling and annotation tools
+profiles    ncRNA discovery and profiling from small RNA-Seq data
+annotate    ncRNA clustering, classification and annotation from profiles
 
 
   [ General help ]
