@@ -86,7 +86,7 @@ int nxcorr(double corr[], const double x[], size_t n_x, const double y[], size_t
 
   // For lag 0 : (max(n_x, n_y)-1) calculate x-corr
   index = 0;
-  for (lag = 0; lag <= 0; lag++) {//(length - 1); lag++) {
+  for (lag = 0; lag <= 5; lag++) {//(length - 1); lag++) {
     int i;
     double rxy = 0;
     for (i = 0; i < (length - lag); i++)
