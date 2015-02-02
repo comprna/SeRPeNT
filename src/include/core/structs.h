@@ -52,6 +52,8 @@ typedef struct {
   int additional;
   char species[MAX_FEATURE];
   char annotation[MAX_FEATURE];
+  char tmp_annotation[MAX_FEATURE];
+  int cluster;
   double anscore;
 } profile_struct;
 
@@ -160,4 +162,11 @@ typedef struct {
   int rleafs;
 } hcnode_struct;
 
+/*
+ * Distance vector node
+ */
+typedef struct {
+  int hc_index;
+  double distance;
+} dvnode_struct;
 #endif
