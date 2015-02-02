@@ -163,8 +163,10 @@ int annotate_sc(int argc,  char **argv)
 
   // Allocate memory for correlation
   xcorr = (double**) malloc(nprofiles * sizeof(double*));
-  for (i = 0; i < nprofiles; i++)
+  for (i = 0; i < nprofiles; i++) {
     xcorr[i] = (double*) malloc(nprofiles * sizeof(double));
+    profiles[i].anscore = 0;
+  }
 
   // Calculate xcorrelations
   fprintf(stderr, "[LOG] CALCULATING CROSS-CORRELATION SCORES AND DISTANCES\n");
@@ -183,7 +185,6 @@ int annotate_sc(int argc,  char **argv)
   }
 
   // Print xcorrelations
-  char strands[2]; strands[0] = '+'; strands[1] = '-';
   for (i = 0; i < (nprofiles - 1); i++) {
     for (j = i + 1; j < nprofiles; j++) {
       if (profiles[i].strand == FWD_STRAND)
@@ -194,7 +195,8 @@ int annotate_sc(int argc,  char **argv)
         fprintf(xcorr_file, "%s:%d-%d:+\t", profiles[j].chromosome, profiles[j].start, profiles[j].end);
       else
         fprintf(xcorr_file, "%s:%d-%d:-\t", profiles[j].chromosome, profiles[j].start, profiles[j].end);
-      fprintf(xcorr_file, "%f\n", xcorr[i][j]);
+      fprintf(xcorr_file, "%f\t", (1 - xcorr[i][j]));
+      fprintf(xcorr_file, "%d\n", profiles[i].length - profiles[j].length);
     }
   }
 
@@ -206,9 +208,9 @@ int annotate_sc(int argc,  char **argv)
 
   // Annotate unknown profiles
   // Print annotated profiles in BED format
-  fprintf(stderr, "[LOG] ANNOTATING UNKNOWN PROFILES\n");
-  hc_annotate(hc, nprofiles, profiles, arguments.cluster_cutoff);
   if (arguments.annotation) {
+    fprintf(stderr, "[LOG] ANNOTATING UNKNOWN PROFILES\n");
+    hc_annotate(hc, nprofiles, profiles, arguments.cluster_cutoff);
     for (i = 0; i < nprofiles; i++) {
       if ((!arguments.additional_profiles) || ((arguments.additional_profiles) && (strcmp(profiles[i].species, "\0") != 0))) {
         profile_struct p = profiles[i];
