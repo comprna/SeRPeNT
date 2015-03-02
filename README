@@ -71,7 +71,7 @@ The srnap subcommands include:
 
 **Examples** : 
 
-    srnap profiles -f 20:true -c 20:200:20:50:5 -r pool -i sere:2 replicate1.bam replicate2.bam output_dir
+    srnap profiles -f 20 -c 20:200:20:50:5 -r pool -i sere:2 replicate1.bam replicate2.bam output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Tool** : annotate
 
