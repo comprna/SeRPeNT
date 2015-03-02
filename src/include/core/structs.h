@@ -20,6 +20,7 @@ typedef struct {
   int idr_method;
   double idr_cutoff;
   int read_length;
+  int min_read_len;
 } args_p_struct;
 
 /*

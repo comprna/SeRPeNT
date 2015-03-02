@@ -13,7 +13,7 @@
  *
  * @return -2 if error ocurred. -1 if EOF. 0 othwerwise.
  */
-int next_alignment(samfile_t *bam_file, alignment_struct *alignment, int replica)
+int next_alignment(samfile_t *bam_file, alignment_struct *alignment, int replica, args_p_struct *arguments)
 {
   int r;
   bam1_t *bam_alignment = bam_init1();
@@ -46,11 +46,13 @@ int next_alignment(samfile_t *bam_file, alignment_struct *alignment, int replica
     // - it is not unmapped, and
     // - it passed qc check by aligner, and
     // - it is not a PCR or optical duplicate
+    // - it has the minimum length specified in the arguments
     if (!(spliced)            &&
         !(flag & BAM_FPAIRED) &&
         !(flag & BAM_FUNMAP)  &&
         !(flag & BAM_FQCFAIL) &&
-        !(flag & BAM_FDUP))
+        !(flag & BAM_FDUP)    &&
+        ((end - pos + 1) >= arguments->min_read_len)) 
     {
       alignment->valid = VALID_ALIGNMENT;
       alignment->replicate = replica;
@@ -312,6 +314,7 @@ int profiles_sc(int argc, char **argv)
   arguments.idr_method = IDR_COMMON;
   arguments.idr_cutoff = CUTOFF;
   arguments.read_length = MAX_READ_LENGTH;
+  arguments.min_read_len = MIN_READ_LEN;
   if (parse_command_line_p(argc, argv, &error_message, &arguments) < 0) {
     fprintf(stderr, "%s\n", error_message);
     if ((strcmp(error_message, PROFILES_HELP_MSG) == 0) || (strcmp(error_message, VERSION_MSG) == 0))
@@ -391,7 +394,7 @@ int profiles_sc(int argc, char **argv)
 
   for (i = 0; i < arguments.number_replicates; i++) {
     do {
-      results[i] = next_alignment(replicate_file[i], &current_alignments[i], i);
+      results[i] = next_alignment(replicate_file[i], &current_alignments[i], i, &arguments);
     } while(results[i] > -1 && !current_alignments[i].valid);
     if (results[i] < 0) {
       fprintf(stderr, "%s\n", ERR_BAM_F_TRUNCATED);
@@ -438,7 +441,7 @@ int profiles_sc(int argc, char **argv)
         }
 
         do {
-          results[i] = next_alignment(replicate_file[i], &current_alignments[i], i);
+          results[i] = next_alignment(replicate_file[i], &current_alignments[i], i, &arguments);
         } while(results[i] > -1 && !current_alignments[i].valid);
       }
     }

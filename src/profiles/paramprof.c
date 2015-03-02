@@ -11,7 +11,7 @@ int parse_command_line_p(int argc, char** argv, char** error_message, args_p_str
   char carg;
   int terminate = 0;
 
-  while(((carg = getopt(argc, argv, "hvc:r:i:")) != -1) && (terminate >= 0)) {
+  while(((carg = getopt(argc, argv, "hvc:r:i:f:")) != -1) && (terminate >= 0)) {
     switch (carg) {
       case 'h':
         terminate--;
@@ -29,6 +29,9 @@ int parse_command_line_p(int argc, char** argv, char** error_message, args_p_str
         break;
       case 'i':
         terminate = parse_irreproducibility_parameters(optarg, error_message, arguments);
+        break;
+      case 'f':
+        terminate = parse_filter_parameters(optarg, error_message, arguments);
         break;
       case '?':
         terminate--;
@@ -241,5 +244,21 @@ int parse_irreproducibility_parameters(char* option, char** error_message, args_
       return(-1);
     }
   }
+  return(0);
+}
+
+/*
+ * parse_filter_parameters
+ *
+ * @see include/profiles/paramprof.h
+ */
+int parse_filter_parameters(char* option, char** error_message, args_p_struct* arguments)
+{
+  arguments->min_read_len = atoi(option);
+  if (arguments->min_read_len < 0) {
+    *error_message = ERR_INVALID_MIN_READ_LEN_VALUE;
+    return(-1);
+  }
+
   return(0);
 }

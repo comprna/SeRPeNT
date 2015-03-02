@@ -32,8 +32,10 @@ The srnap subcommands include:
 
 **Options**  :
 
-           -l, --length      Length of the single-end reads
-                             [ Default is 200 ]
+           -f, --filter      Read filtering
+                             Format is <minreadlen>, where:
+                               - <minreadlen> is the minimum required length for the reads. Reads shorter than <readlen> are discarded. If 0, no reads are discarded. Must be >= 0.
+                             [ Default is 0 ]
 
            -c, --contigs     Profile definition
                              Format is <minlen:maxlen:spacing:minheight:trimming>, where:
@@ -69,7 +71,7 @@ The srnap subcommands include:
 
 **Examples** : 
 
-    srnap profiles -c 20:200:20:50:5 -r pool -i sere:2 replicate1.bam replicate2.bam output_dir
+    srnap profiles -f 20:true -c 20:200:20:50:5 -r pool -i sere:2 replicate1.bam replicate2.bam output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Tool** : annotate
 

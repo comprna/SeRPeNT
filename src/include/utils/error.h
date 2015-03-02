@@ -138,5 +138,13 @@ Options   :\n\
  * ERROR : Cannot read annotation file
  */
 #define ERR_ANNOTATION_F_NOT_READABLE "Annotation file does not exist or is not readable"
+/*
+ * ERROR : Invalid minimum read length value
+ */
+#define ERR_INVALID_MIN_READ_LEN_VALUE "Minimum read length must be a number greater or equal to 0"
+/*
+ * ERROR : Invalid option for -f value
+ */
+#define ERR_INVALID_f_VALUE "Invalid argument for option -f"
 
 #endif

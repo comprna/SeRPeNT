@@ -13,6 +13,11 @@
 #include <utils/error.h>
 
 /*
+ * Default value for read_minlen parameter
+ */
+#define MIN_READ_LEN 0
+
+/*
  * Default value for minlen parameter
  */
 #define MIN_LEN 15
