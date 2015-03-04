@@ -2,18 +2,6 @@
 #define ERROR_H
 
 /*
- * ERROR : Bad syntax message for plotprofiles
- */
-#define ERR_MSG_PLOTPROFILES "Tool      : plotprofiles\n\
-Version   : v1.0\n\
-Summary   : A tool to draw sRNA profiles discovered using the sdrnaprofiles tool\n\n\
-Usage     : plotprofiles [OPTIONS] <profiles.dat> <profile_name_1> [<profile_name_2> ... <profile_name_n>]\n\n\
-Output    : plotprofiles will open a X11 window displaying the profile or will generate a png file\n\n\
-Options   :\n\
-           -o    PNG file.\n\
-                 The plot will be printed in the specified PNG file.\n\
-                 - Default behaviour is to open the plot in a system window"
-/*
  * ERROR : Bad syntax
  */
 #define ERR_HELP_MSG "Please type <srnap -h> or <srnap --help> for help"
@@ -25,79 +13,99 @@ Options   :\n\
  * ERROR : clusters - bad syntax
  */
 #define ERR_ANNOTATE_HELP_MSG "Please type <srnap annotate -h> or <srnap annotate --help> for help"
+
 /*
  * ERROR : BED Format
  */
 #define ERR_BED "BED format file:\n\
     chromosome  start_position  end_position  name  score  strand   ..."
-/*
- * ERROR : Invalid argument for -c option
- */
-#define ERR_INVALID_c_VALUE "Invalid argument for option -c"
-/*
- * ERROR : Invalid argument for -r option
- */
-#define ERR_INVALID_r_VALUE "Invalid argument for option -r"
-/*
- * ERROR : Invalid argument for -i option
- */
-#define ERR_INVALID_i_VALUE "Invalid argument for option -i"
-/*
- * ERROR : Invalid argument for -t option
- */
-#define ERR_INVALID_t_VALUE "Invalid argument for option -t"
-/*
- * ERROR : Invalid argument for -a option
- */
-#define ERR_INVALID_a_VALUE "Invalid argument for option -a"
-/*
- * ERROR : Invalid argument for -p option
- */
-#define ERR_INVALID_p_VALUE "Invalid argument for option -p"
-/*
- * ERROR : Invalid minimum contig length
- */
-#define ERR_INVALID_m_VALUE "Minimum contig length must be an integer number greater than 5"
-/*
- * ERROR : Invalid maximum contig length
- */
-#define ERR_INVALID_M_VALUE "Maximum contig length must be an integer number greater then the minimum length"
-/*
- * ERROR : Invalid spacing value
- */
-#define ERR_INVALID_s_VALUE "Spacing must be an integer number greater or equal to 0"
-/*
- * ERROR : Invalid minimum height value
- */
-#define ERR_INVALID_h_VALUE "Minimum height must be an integer number greater than 0"
-/*
- * ERROR : Invalid argument for -t option
- */
-#define ERR_INVALID_tr_VALUE "Trimming must be an integer number greater than 0"
-/*
- * ERROR : Unrecognized option or argument missing
- */
-#define ERR_INVALID_ARGUMENT "Unrecognized option or argument missing"
-/*
- * ERROR : Minimum length is higher or equal than maximum length
- */
-#define ERR_INVALID_LENGTH "Minimum length is higher or equal than maximum length"
-/*
- * ERROR : Invalid number of arguments
- */
-#define ERR_INVALID_NUMBER_ARGUMENTS "Invalid number of arguments"
-/*
- * ERROR : Invalid number of replicates
- */
-#define ERR_INVALID_NUMBER_REPLICATES "Invalid number of arguments. Only up to 10 replicates allowed"
+
 /*
  * ERROR : Unrecognized subcommand
  */
 #define ERR_INVALID_SUBCOMMAND "Subcommand not recognized"
 /*
+ * ERROR : Unrecognized option or argument missing
+ */
+#define ERR_INVALID_ARGUMENT "Unrecognized option or argument missing"
+/*
+ * ERROR : Invalid number of arguments
+ */
+#define ERR_INVALID_NUMBER_ARGUMENTS "Invalid number of arguments"
+
+/*
+ * ERROR : Invalid number of replicates
+ */
+#define ERR_INVALID_NUMBER_REPLICATES "Invalid number of arguments. Only up to 10 replicates allowed"
+
+/*
+ * ERROR : Invalid option for -f value
+ */
+#define ERR_INVALID_f_VALUE "Invalid argument for option -f"
+/*
+ * ERROR : Invalid minimum read length <minreadlen> value
+ */
+#define ERR_INVALID_minreadlen_VALUE "Minimum read length <minreadlen> must be a number greater or equal to 0"
+
+/*
+ * ERROR : Invalid argument for -r option
+ */
+#define ERR_INVALID_r_VALUE "Invalid argument for option -r"
+/*
  * ERROR : Invalid replicate number
  */
-#define ERR_INVALID_REPLICATE_NUMBER "Replicate number for option -r is greater than the number of actual replicates"
+#define ERR_INVALID_repnumber_VALUE "Replicate number <repnumber> must be an integer number between 1 and the number of actual replicates"
+
+/*
+ * ERROR : Invalid argument for -i option
+ */
+#define ERR_INVALID_i_VALUE "Invalid argument for option -i"
+
+/*
+ * ERROR : Invalid argument for -p option
+ */
+#define ERR_INVALID_p_VALUE "Invalid argument for option -p"
+/*
+ *  * ERROR : Invalid minimum contig length
+ *   */
+#define ERR_INVALID_minlen_VALUE "Minimum contig length <minlen> must be an integer number greater than 5"
+/*
+ *  * ERROR : Invalid maximum contig length
+ *   */
+#define ERR_INVALID_maxlen_VALUE "Maximum contig length <maxlen> must be an integer number greater than the minimum length"
+/*
+ *  * ERROR : Invalid spacing value
+ *   */
+#define ERR_INVALID_spacing_VALUE "Maximum distance between contigs <spacing> must be an integer number greater or equal to 0"
+/*
+ *  * ERROR : Invalid minimum height value
+ *   */
+#define ERR_INVALID_minheight_VALUE "Minimum height <minheight> must be an integer number greater than 0"
+/*
+ *  * ERROR : Invalid argument for -t option
+ *   */
+#define ERR_INVALID_trimming_VALUE "Number of bases to trim <trimming> must be an integer number greater or equal to 0"
+
+/*
+ * ERROR : Invalid argument for -a option
+ */
+#define ERR_INVALID_a_VALUE "Invalid argument for option -a"
+
+/*
+ * ERROR : Invalid argument for -x option
+ */
+#define ERR_INVALID_x_VALUE "Invalid argument for option -p"
+
+/*
+ * ERROR : Invalid argument for -t option
+ */
+#define ERR_INVALID_t_VALUE "Invalid argument for option -t"
+
+/*
+ * ERROR : BED Format
+ */
+#define ERR_BED "BED format file:\n\
+    chromosome  start_position  end_position  name  score  strand   ..."
 /*
  * ERROR : Cannot read input file
  */
@@ -138,13 +146,5 @@ Options   :\n\
  * ERROR : Cannot read annotation file
  */
 #define ERR_ANNOTATION_F_NOT_READABLE "Annotation file does not exist or is not readable"
-/*
- * ERROR : Invalid minimum read length value
- */
-#define ERR_INVALID_MIN_READ_LEN_VALUE "Minimum read length must be a number greater or equal to 0"
-/*
- * ERROR : Invalid option for -f value
- */
-#define ERR_INVALID_f_VALUE "Invalid argument for option -f"
 
 #endif

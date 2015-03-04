@@ -32,36 +32,36 @@ The srnap subcommands include:
 
 **Options**  :
 
-           -f, --filter      Read filtering
-                             Format is <minreadlen>, where:
-                               - <minreadlen> is the minimum required length for the reads. Reads shorter than <readlen> are discarded. If 0, no reads are discarded. Must be >= 0.
-                             [ Default is 0 ]
+           -f   Read filtering
+                Format is <minreadlen>, where:
+                  - <minreadlen> is the minimum required length for the reads. Reads shorter than <readlen> are discarded. If 0, no reads are discarded. Must be >= 0.
+                [ Default is 0 ]
 
-           -c, --contigs     Profile definition
-                             Format is <minlen:maxlen:spacing:minheight:trimming>, where:
-                               - <minlen> is the minimum length of the contig. Contigs shorter than <minlen> are not reported. Must be > 5.
-                               - <maxlen> is the maximum length of the contig. Contigs longer than <maxlen> are not reported. Must be > minlen.
-                               - <spacing> is the maximum distance between contigs. Contigs separated by <spacing> or less bp are considered the same contig. Must be >= 0.
-                               - <minheight> is the minimum number of piled-up reads. Contigs that have less than <minheight> piled-up reads are not reported. Must be > 0.
-                               - <trimming> is the number of bases to trim. Bases in the 5' and 3' sites of the contig that have less than <trimming> piled-up reads are trimmed. Must be >= 0.
-                             [ Default is 16:200:20:50:5 ]
+           -i   Irreproducibility control for contigs
+                Format is <method:cutoff> | <common> | <none>, where:
+                  - <method> is the irreproducibility control method. Options are:
+                    - sere : Single-parameter quality control. (Schulze et al. BMC Genomics 2012)
+                    - idr  : Irreproducibility discovery rate. (Li et al. The Annals of Applied Statistics 2011)
+                  - <cutoff> is the cutoff value. Contigs that have an irreproducibility score higher than <cutoff> are not reported.
+                  - <common> : Contigs that do not overlap in all the replicates are not reported.
+                  - <none>   : All contigs are reported.
+                [ Default is common ]
 
-           -r, --replicates  Replicates treatment
-                             Format is <pool> | <mean> | <replicate:number>, where:
-                               - <pool> : Profiles are built by pooling the reads of all the replicates.
-                               - <mean> : Profiles are built by averaging the reads of all the replicates.
-                               - <replicate:number> : Profiles are built by using only the reads of one replicate.
-                             [ Default is pool ]
+           -r   Replicates treatment
+                Format is <pool> | <mean> | <replicate:repnumber>, where:
+                  - <pool> : Profiles are built by pooling the reads of all the replicates.
+                  - <mean> : Profiles are built by averaging the reads of all the replicates.
+                  - <replicate:repnumber> : Profiles are built by using only the reads of the <repnumber> replicate.
+                [ Default is pool ]
 
-           -i, --ic          Irreproducibility control
-                             Format is <method:cutoff> | <common> | <none>, where:
-                               - <method> is the irreproducibility control method. Options are:
-                                 - sere : Single-parameter quality control. (Schulze et al. BMC Genomics 2012)
-                                 - idr  : Irreproducibility discovery rate. (Li et al. The Annals of Applied Statistics 2011)
-                               - <cutoff> is the cutoff value. Contigs that have an irreproducibility score higher than <cutoff> are not reported.
-                               - <common> : Contigs that do not overlap in all the replicates are not reported.
-                               - <none>   : All contigs are reported.
-                             [ Default is common ]
+           -p   Profile definition
+                Format is <minlen:maxlen:spacing:minheight:trimming>, where:
+                  - <minlen> is the minimum length of the profile. Profiles shorter than <minlen> are not reported. Must be > 5.
+                  - <maxlen> is the maximum length of the profile. Profiles longer than <maxlen> are not reported. Must be >= minlen.
+                  - <spacing> is the maximum distance between profiles. Profiles separated by <spacing> or less bp are merged into one single profile. Must be >= 0.
+                  - <minheight> is the minimum number of piled-up reads. Profiles that have less than <minheight> piled-up reads are not reported. Must be > 0.
+                  - <trimming> is the number of bases to trim. Bases in the 5' and 3' sites of the profile that have less than <trimming> piled-up reads are trimmed. Must be >= 0.
+                [ Default is 16:200:20:50:5 ]
 
 **Output** :
 
@@ -71,7 +71,7 @@ The srnap subcommands include:
 
 **Examples** : 
 
-    srnap profiles -f 20 -c 20:200:20:50:5 -r pool -i sere:2 replicate1.bam replicate2.bam output_dir
+    srnap profiles -f 20 -i sere:2 -r pool -c 20:200:20:50:5 replicate1.bam replicate2.bam output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Tool** : annotate
 
@@ -83,21 +83,21 @@ The srnap subcommands include:
 
 **Options** : 
 
-            -a, --afile      Annotation file
-                             Format is <annotation_file>, where:
-                               - <annotation_file> is a BED file with annotated features
-                             [ No default value ]
+            -a   Annotation file
+                 Format is <annotation_file>, where:
+                   - <annotation_file> is a BED file with annotated features
+                 [ No default value ]
 
-            -p, --pfile      Additional profiles file
-                             Format is <species:profiles_file>, where:
-                               - <species> is the name of the species where the profiles comes from. e.g. hsap.
-                               - <profiles_file> is a profiles file
-                             [ No default value ]
+            -x   Additional profiles file
+                 Format is <species:profiles_file>, where:
+                   - <species> is the name of the species where the profiles comes from. e.g. hsap.
+                   - <profiles_file> is a profiles file
+                 [ No default value ]
 
-            -t, --threshold  Threshold for label propagation
-                             Format is <threshold>, where:
-                               - <threshold> is the threshold of the hierarchical clustering distance
-                             [ Default is 0.80 ]
+            -t   Threshold for label propagation
+                 Format is <threshold>, where:
+                   - <threshold> is the threshold of the hierarchical clustering distance
+                 [ Default is 0.80 ]
 
 **Output** :
 
@@ -109,6 +109,6 @@ The srnap subcommands include:
 
 **Example** :
 
-    srnap annotate -t 0.95 -a hsap_micrornas.bed profiles.dat output_dir
-    srnap annotate -a hsap_micrornas.bed -p hsap:hsap_profiles.dat profiles.dat output_dir
+    srnap annotate -a hsap_micrornas.bed -t 0.95 profiles.dat output_dir
+    srnap annotate -a hsap_micrornas.bed -x hsap:hsap_profiles.dat profiles.dat output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
