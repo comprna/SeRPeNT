@@ -54,6 +54,11 @@ int parse_command_line_p(int argc, char** argv, char** error_message, args_p_str
     arguments->number_replicates = argc - optind - 1;
   }
 
+  if ((arguments->replicate_treat == REPLICATE_REPLICATE) && (arguments->replicate_number > arguments->number_replicates)) {
+    terminate--;
+    *error_message = ERR_INVALID_repnumber_VALUE;
+  }
+
   return(terminate);
 }
 
@@ -108,7 +113,7 @@ int parse_irreproducibility_parameters(char* option, char** error_message, args_
     // Read cutoff
     if ((token = strtok(NULL, ":")) != NULL) {
       arguments->idr_cutoff = atof(token);
-      if (arguments->trimming < 0) {
+      if (arguments->idr_cutoff <= 0) {
         *error_message = ERR_INVALID_i_VALUE;
         return(-1);
       }
@@ -159,9 +164,7 @@ int parse_replicates_parameters(char* option, char** error_message, args_p_struc
     // Read number
     if ((token = strtok(NULL, ":")) != NULL) {
       arguments->replicate_number = atoi(token);
-      if ((arguments->replicate_number <= 0) ||
-          (arguments->replicate_number > arguments->number_replicates))
-      {
+      if (arguments->replicate_number <= 0) {
         *error_message = ERR_INVALID_repnumber_VALUE;
         return(-1);
       }
@@ -189,6 +192,11 @@ int parse_replicates_parameters(char* option, char** error_message, args_p_struc
 int parse_profiles_parameters(char* option, char** error_message, args_p_struct* arguments)
 {
   char* token;
+
+  if (strchr(option, ':') == NULL) {
+    *error_message = ERR_INVALID_p_VALUE;
+    return(-1);
+  }
 
   if ((token = strtok(option, ":")) != NULL) {
     arguments->min_len = atoi(token);

@@ -66,24 +66,24 @@
  */
 #define ERR_INVALID_p_VALUE "Invalid argument for option -p"
 /*
- *  * ERROR : Invalid minimum contig length
- *   */
+ * ERROR : Invalid minimum contig length
+ */
 #define ERR_INVALID_minlen_VALUE "Minimum contig length <minlen> must be an integer number greater than 5"
 /*
- *  * ERROR : Invalid maximum contig length
- *   */
+ * ERROR : Invalid maximum contig length
+ */
 #define ERR_INVALID_maxlen_VALUE "Maximum contig length <maxlen> must be an integer number greater than the minimum length"
 /*
- *  * ERROR : Invalid spacing value
- *   */
+ * ERROR : Invalid spacing value
+ */
 #define ERR_INVALID_spacing_VALUE "Maximum distance between contigs <spacing> must be an integer number greater or equal to 0"
 /*
- *  * ERROR : Invalid minimum height value
- *   */
+ * ERROR : Invalid minimum height value
+ */
 #define ERR_INVALID_minheight_VALUE "Minimum height <minheight> must be an integer number greater than 0"
 /*
- *  * ERROR : Invalid argument for -t option
- *   */
+ * ERROR : Invalid argument for -t option
+ */
 #define ERR_INVALID_trimming_VALUE "Number of bases to trim <trimming> must be an integer number greater or equal to 0"
 
 /*

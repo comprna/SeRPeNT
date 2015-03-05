@@ -42,7 +42,7 @@ The srnap subcommands include:
                   - <method> is the irreproducibility control method. Options are:
                     - sere : Single-parameter quality control. (Schulze et al. BMC Genomics 2012)
                     - idr  : Irreproducibility discovery rate. (Li et al. The Annals of Applied Statistics 2011)
-                  - <cutoff> is the cutoff value. Contigs that have an irreproducibility score higher than <cutoff> are not reported.
+                  - <cutoff> is the cutoff value. Contigs that have an irreproducibility score higher than <cutoff> are not reported. Must be > 0.
                   - <common> : Contigs that do not overlap in all the replicates are not reported.
                   - <none>   : All contigs are reported.
                 [ Default is common ]
