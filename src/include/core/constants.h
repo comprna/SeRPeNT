@@ -13,6 +13,16 @@
 #include <utils/error.h>
 
 /*
+ * MIN macro
+ */
+#define MIN(a,b) (((a)<(b))?(a):(b))
+
+/*
+ * MAX macro
+ */
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
+/*
  * Default value for read_minlen parameter
  */
 #define MIN_READ_LEN 0
