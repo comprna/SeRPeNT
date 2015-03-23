@@ -20,7 +20,7 @@ utest: profiles.o annotate.o utest.o
 	gcc -o bin/utest -L/home/apages/tools/lcut-0.3.0/lib/ -Llib/ $(OBJS) $(TESTOBJS) build/utest.o -llcut -lgsl -lgslcblas -lm -lz -lpthread -lbam
 
 utest.o: tcparamprof.o
-	$(CC) $(CFLAGS) test/src/utest.c -Isrc/include/ -Itest/src/include -I/home/apages/tools/lcut-0.3.0/include/ -o build/utest.o
+	$(CC) $(CFLAGS) test/src/utest/utest.c -Isrc/include/ -Itest/src/utest/include -I/home/apages/tools/lcut-0.3.0/include/ -o build/utest.o
 
 
 # Compile shared objects
@@ -68,7 +68,7 @@ idr.o : setup
 # Compile shared objects for testing
 
 tcparamprof.o : setup
-	$(CC) $(CFLAGS) test/src/tcparamprof.c -Isrc/include -Itest/src/include -I/home/apages/tools/lcut-0.3.0/include/ -o build/tcparamprof.o
+	$(CC) $(CFLAGS) test/src/utest/tcparamprof.c -Isrc/include -Itest/src/utest/include -I/home/apages/tools/lcut-0.3.0/include/ -o build/tcparamprof.o
 
 # Prepare build environment
 
