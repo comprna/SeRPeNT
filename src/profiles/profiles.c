@@ -1,190 +1,5 @@
 #include <profiles/profiles.h>
 
-/*
- * next_alignment
- *   Retrieves one alignment from a BAM file
- *
- * @arg const samfile_t *bam_file
- *   Pointer to a BAM file descriptor
- * @arg const bam1_t *bam_alignment
- *   Pointer to a BAM alignment information structure
- * @arg alignment *alignment
- *   Pointer to an alignment handler
- *
- * @return -2 if error ocurred. -1 if EOF. 0 othwerwise.
- */
-int next_alignment(samfile_t *bam_file, alignment_struct *alignment, int replica, args_p_struct *arguments)
-{
-  int r;
-  bam1_t *bam_alignment = bam_init1();
-  
-  if ((r = samread(bam_file, bam_alignment)) >= 0) {
-    int32_t pos = bam_alignment->core.pos + 1;
-    int32_t end = bam_alignment->core.pos;
-    int32_t flag = bam_alignment->core.flag;
-    char *chr = bam_file->header->target_name[bam_alignment->core.tid];
-    uint32_t *cigar = bam1_cigar(bam_alignment);
-    int i;
-    char spliced = 0;
-
-    // Determine if alignment is spliced by checking cigar string
-    for (i = 0; i < bam_alignment->core.n_cigar; ++i) {
-      char operation = bam_cigar_opchr(cigar[i]);
-      
-      spliced = spliced || (operation == 'N');
-
-      if ((operation == 'D') ||
-          (operation == 'M') ||
-          (operation == 'X') ||
-          (operation == '='))
-        end += bam_cigar_oplen(cigar[i]);
-    }
-
-    // Mark the alignment as valid if:
-    // - it is not spliced, and
-    // - it is not paired, and
-    // - it is not unmapped, and
-    // - it passed qc check by aligner, and
-    // - it is not a PCR or optical duplicate
-    // - it has the minimum length specified in the arguments
-    if (!(spliced)            &&
-        !(flag & BAM_FPAIRED) &&
-        !(flag & BAM_FUNMAP)  &&
-        !(flag & BAM_FQCFAIL) &&
-        !(flag & BAM_FDUP)    &&
-        ((end - pos + 1) >= arguments->min_read_len)) 
-    {
-      alignment->valid = VALID_ALIGNMENT;
-      alignment->replicate = replica;
-      alignment->nreads = 1;
-      strncpy(alignment->chromosome, chr, MAX_FEATURE);
-      alignment->start = pos;
-      alignment->end = end;
-      if (flag & BAM_FREVERSE)
-        alignment->strand = REV_STRAND;
-      else 
-        alignment->strand = FWD_STRAND;
-    }
-    else
-      alignment->valid = INVALID_ALIGNMENT;
-  }
-
-  bam_destroy1(bam_alignment);
-  return(r);
-}
-
-
-/*
- * parse_alignment:
- *   Parse alignment and build contig accordingly
- *
- * @arg 
- */
-int parse_alignment(const args_p_struct *arguments, const alignment_struct *alignment, profile_struct *current_profile, contig_struct *primary, int *index)
-{
-  // FIRST alignment
-  if (primary->start == 0) {
-    primary->start = alignment->start;
-    primary->end = alignment->end;
-    strncpy(primary->chromosome, alignment->chromosome, MAX_FEATURE);
-    primary->profile = (double*) malloc(sizeof(double) * (primary->end - primary->start + 1));
-    primary->nreads = (int*) malloc(sizeof(int) * (arguments->number_replicates));
-    int i;
-    if ((arguments->replicate_treat != REPLICATE_REPLICATE) || ((arguments->replicate_treat == REPLICATE_REPLICATE) && ((arguments->replicate_number - 1) == alignment->replicate)))
-      for (i = 0; i < (primary->end - primary->start + 1); i++) primary->profile[i] = alignment->nreads;
-    for (i = 0; i < arguments->number_replicates; i++) primary->nreads[i] = 0;
-    primary->nreads[alignment->replicate] += alignment->nreads;
-  }
-  // NOT FIRST alignment
-  else {
-    // Cases:
-    //       current contig    chr A  |----------------|
-    //
-    //       alignments        chr A        |------|
-    //                         chr A  |----------|
-    //                         chr A      |------------|
-    //                         chr A  |----------------|
-    if (strcmp(alignment->chromosome, primary->chromosome) == 0 && alignment->end <= primary->end && alignment->end > primary->start) {
-      int i;
-      if ((arguments->replicate_treat != REPLICATE_REPLICATE) || ((arguments->replicate_treat == REPLICATE_REPLICATE) && ((arguments->replicate_number - 1) == alignment->replicate)))
-        for (i = alignment->start - primary->start; i < (alignment->end - primary->start + 1); i++) primary->profile[i] += alignment->nreads;
-      primary->nreads[alignment->replicate] += alignment->nreads;
-    }
-
-    // Cases:
-    //       current contig    chr A  |----------------|
-    //
-    //       alignments        chr A               |--------|
-    //                         chr A  |---------------------|
-    //                         chr A                   |----|
-    //                         chr A                    spacing |-------|
-    else if (strcmp(alignment->chromosome, primary->chromosome) == 0 && alignment->start <= primary->end + arguments->spacing && alignment->end > primary->start) {
-      double *profile_realloc = (double*) realloc(primary->profile, sizeof(double) * (alignment->end - primary->start + 1));
-      if (profile_realloc == NULL)
-        return(-1);
-      primary->profile = profile_realloc;
-      int i;
-      for (i = (primary->end - primary->start + 1); i < (alignment->end - primary->start + 1); i++) primary->profile[i] = 0;
-      if ((arguments->replicate_treat != REPLICATE_REPLICATE) || ((arguments->replicate_treat == REPLICATE_REPLICATE) && ((arguments->replicate_number - 1) == alignment->replicate)))
-        for (i = (alignment->start - primary->start); i < (alignment->end - primary->start + 1); i++) primary->profile[i] += alignment->nreads;
-      primary->end = alignment->end;
-      primary->nreads[alignment->replicate] += alignment->nreads;
-    }
-
-    // Cases:
-    //       current contig    chr A             |----------------|
-    //
-    //       alignments        chr A                                > spacing   |------|
-    //                         chr B  |--------|
-    else {
-      int i;
-
-      // Store contig data
-      current_profile->nreads = (int*) malloc(sizeof(int) * arguments->number_replicates);
-      for (i = 0; i < arguments->number_replicates; i++) current_profile->nreads[i] = primary->nreads[i];
-      strncpy(current_profile->chromosome, primary->chromosome, MAX_FEATURE);
-      current_profile->start = primary->start;
-      current_profile->end = primary->end;
-      current_profile->length = (primary->end - primary->start + 1);
-      current_profile->strand = alignment->strand;
-
-      // Store profile data if allowed by parameters -> memory reduction
-      if ((gsl_stats_max(primary->profile, 1, (primary->end - primary->start + 1)) >= arguments->min_reads) &&  // Contig has more than r reads
-          ((primary->end - primary->start + 1) >= arguments->min_len))                                          // Contig has, at most, M nucleotides
-      {
-        current_profile->valid = 1;
-        current_profile->profile = (double*) malloc(sizeof(double) * (primary->end - primary->start + 1));
-        for (i = 0; i < (primary->end - primary->start + 1); i++) {
-          if (arguments->replicate_treat == REPLICATE_MEAN)
-            current_profile->profile[i] = primary->profile[i] / ((double) arguments->number_replicates);
-          else
-            current_profile->profile[i] = primary->profile[i];
-        }
-      }
-      else
-        current_profile->valid = 0;
-
-      // Increment index pointer
-      (*index)++;
-
-      // Restart primary alignment
-      primary->start = alignment->start;
-      primary->end = alignment->end;
-      strncpy(primary->chromosome, alignment->chromosome, MAX_FEATURE);
-      double *profile_realloc = (double*) realloc(primary->profile, sizeof(double) * (primary->end - primary->start + 1));
-      if (profile_realloc == NULL)
-        return(1);
-      primary->profile = profile_realloc;
-      if ((arguments->replicate_treat != REPLICATE_REPLICATE) || ((arguments->replicate_treat == REPLICATE_REPLICATE) && ((arguments->replicate_number - 1) == alignment->replicate)))
-        for (i = 0; i < (primary->end - primary->start + 1); i++) primary->profile[i] = alignment->nreads;
-      for (i = 0; i < arguments->number_replicates; i++) primary->nreads[i] = 0;
-      primary->nreads[alignment->replicate] += alignment->nreads;
-    }
-  }
-  
-  return(0);
-}
-
 
 /*
  * compare_double:
@@ -207,6 +22,7 @@ int compare_double (const void *a, const void *b)
   return 0;
 }
 
+
 /*
  * deepcpy
  *  Function to copy values from one alignment_struct to another
@@ -227,6 +43,7 @@ void deepcpy(alignment_struct* destiny, alignment_struct* source)
   destiny->replicate = source->replicate;
   destiny->nreads = source->nreads;
 }
+
 
 /*
  * morcgez
@@ -323,6 +140,37 @@ int profiles_sc(int argc, char **argv)
     return(1);
   }
 
+  // Open replicate file for reading and read BAM header
+  // Exit if replicate BAM files do not exist, are not readable or do not have header
+  for (index = 0; index < arguments.number_replicates; index++) {
+    if ((replicate_file[index] = samopen(arguments.replicate_f_path[index], "rb", 0)) == 0) {
+      fprintf(stderr, "%s - %s\n", ERR_BAM_F_NOT_READABLE, arguments.replicate_f_path[index]);
+      return(1);
+    }
+    if (replicate_file[index]->header == 0) {
+      fprintf(stderr, "%s - %s\n", ERR_BAM_F_NOT_HEADER, arguments.replicate_f_path[index]);
+      return(1);
+    }
+  }
+
+  // Check that all the replicates have reads in the same chromosomes
+  // TODO -> replicates can have different number of chromosomes
+  result = replicate_file[0]->header->n_targets;
+  for (i = 1; i < arguments.number_replicates; i++) {
+    if (replicate_file[0]->header->n_targets != result) {
+      fprintf(stderr, "%s - %s\n", ERR_BAM_F_TRUNCATED, arguments.replicate_f_path[i]);
+      return(1);
+    }
+  }
+  for (i = 0; i < replicate_file[0]->header->n_targets; i++) {
+    for (j = 1; j < arguments.number_replicates; j++) {
+      if (strcmp(replicate_file[0]->header->target_name[i], replicate_file[j]->header->target_name[i]) != 0) {
+        fprintf(stderr, "%s - %s\n", ERR_BAM_F_TRUNCATED, arguments.replicate_f_path[j]);
+        return(1);
+      }
+    }
+  }
+
   // Open output files for writing results.
   // Exit if output files do not exist or are not readable.
   char *profiles_file_name = malloc((MAX_PATH + strlen(PROFILES_SUFFIX) + 2) * sizeof(char));
@@ -341,37 +189,6 @@ int profiles_sc(int argc, char **argv)
   }
   free(profiles_file_name);
   free(contigs_file_name);
-
-  // Open replicate file for reading and read BAM header
-  // Exit if replicate BAM files do not exist, are not readable or do not have header
-  for (index = 0; index < arguments.number_replicates; index++) {
-    if ((replicate_file[index] = samopen(arguments.replicate_f_path[index], "rb", 0)) == 0) {
-      fprintf(stderr, "%s - %s\n", ERR_BAM_F_NOT_READABLE, arguments.replicate_f_path[index]);
-      return(1);
-    }
-    if (replicate_file[index]->header == 0) {
-      fprintf(stderr, "%s - %s\n", ERR_BAM_F_NOT_HEADER, arguments.replicate_f_path[index]);
-      return(1);
-    }
-  }
-
-  // Check that all the replicates have reads in the same chromosomes
-  // BIG TODO -> replicates can have different number of chromosomes
-  result = replicate_file[0]->header->n_targets;
-  for (i = 1; i < arguments.number_replicates; i++) {
-    if (replicate_file[0]->header->n_targets != result) {
-      fprintf(stderr, "%s - %s\n", ERR_BAM_F_TRUNCATED, arguments.replicate_f_path[i]);
-      return(1);
-    }
-  }
-  for (i = 0; i < replicate_file[0]->header->n_targets; i++) {
-    for (j = 1; j < arguments.number_replicates; j++) {
-      if (strcmp(replicate_file[0]->header->target_name[i], replicate_file[j]->header->target_name[i]) != 0) {
-        fprintf(stderr, "%s - %s\n", ERR_BAM_F_TRUNCATED, arguments.replicate_f_path[j]);
-        return(1);
-      }
-    }
-  }
 
   // Allocate memory for profiles
   profiles = (profile_struct*) malloc(MAX_CONTIGS * sizeof(profile_struct));

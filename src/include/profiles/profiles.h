@@ -1,6 +1,5 @@
-#include <gsl/gsl_statistics_double.h>
-#include <samtools/sam.h>
 #include <profiles/paramprof.h>
+#include <profiles/alignio.h>
 #include <profiles/bheap.h>
 #include <profiles/idr.h>
 
