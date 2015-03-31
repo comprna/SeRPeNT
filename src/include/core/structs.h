@@ -56,6 +56,7 @@ typedef struct {
   char tmp_annotation[MAX_FEATURE];
   int cluster;
   double anscore;
+  double max_height;
 } profile_struct;
 
 /*

@@ -96,6 +96,8 @@ int next_profile(FILE* fp, profile_struct* profile)
     }
   }
 
+  profile->max_height = gsl_stats_max(profile->profile, 1, profile->length);
+
   free(cline);
   return(1);
 }
@@ -179,6 +181,8 @@ int next_additional_profile(FILE* fp, profile_struct* profile, char* species)
       return(-1);
     }
   }
+
+  profile->max_height = gsl_stats_max(profile->profile, 1, profile->length);
 
   free(cline);
   return(1);
