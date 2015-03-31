@@ -11,6 +11,7 @@
 #include <utils/version.h>
 #include <utils/help.h>
 #include <utils/error.h>
+#include <gsl/gsl_statistics_double.h>
 
 /*
  * MIN macro

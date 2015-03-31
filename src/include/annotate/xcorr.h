@@ -1,5 +1,4 @@
 #include <core/structs.h>
-#include <gsl/gsl_statistics_double.h>
 
 /*
  * Generate an element of a vector of gaussian white noise adjusted

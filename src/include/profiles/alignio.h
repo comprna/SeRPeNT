@@ -1,4 +1,3 @@
-#include <gsl/gsl_statistics_double.h>
 #include <core/structs.h>
 #include <samtools/sam.h>
 
