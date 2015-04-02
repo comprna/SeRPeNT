@@ -57,6 +57,8 @@ typedef struct {
   int cluster;
   double anscore;
   double max_height;
+  double mean;
+  double variance;
 } profile_struct;
 
 /*

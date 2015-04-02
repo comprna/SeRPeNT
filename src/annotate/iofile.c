@@ -97,6 +97,8 @@ int next_profile(FILE* fp, profile_struct* profile)
   }
 
   profile->max_height = gsl_stats_max(profile->profile, 1, profile->length);
+  profile->mean = gsl_stats_mean(profile->profile, 1, profile->length);
+  profile->variance = gsl_stats_variance(profile->profile, 1, profile->length);
 
   free(cline);
   return(1);
@@ -183,6 +185,8 @@ int next_additional_profile(FILE* fp, profile_struct* profile, char* species)
   }
 
   profile->max_height = gsl_stats_max(profile->profile, 1, profile->length);
+  profile->mean = gsl_stats_mean(profile->profile, 1, profile->length);
+  profile->variance = gsl_stats_variance(profile->profile, 1, profile->length);
 
   free(cline);
   return(1);
