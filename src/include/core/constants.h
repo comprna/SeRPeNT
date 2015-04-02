@@ -126,6 +126,11 @@
 #define MAX_READ_LENGTH 200
 
 /*
+ * Maximum profile length
+ */
+#define MAX_PROFILE_LENGTH 500
+
+/*
  * Maximum number of block base pairs
  */
 #define MAX_BLOCK 10000
