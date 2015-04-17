@@ -105,33 +105,46 @@ int nmstrcmp(const alignment_struct operators[], const int pos, const char* str)
 int profiles_sc(int argc, char **argv)
 {
   // Define and declare variables
-  args_p_struct arguments;                              // Struct for handling command line parameters
-  FILE *profiles_file, *contigs_file;                   // Output file descriptors
-  samfile_t* replicate_file[MAX_REPLICATES];            // Array of BAM file descriptors
-  alignment_struct current_alignments[MAX_REPLICATES];  // Array of alignment_struct struct
-  int result;                                           // Result of any operation
-  int results[MAX_REPLICATES];                          // Replicate-specific results
-  char* error_message;                                  // Error message to display in case of abnormal termination
-  profile_struct* profiles;                             // Array of profile_struct structs
-  contig_struct contig_fwd, contig_rev;                 // Struct for building profiles
-  int i, j, stop, index, chridx, blkidx, maxstart;      // Multi-purpose indexes and checkpoint variables
-  char curr_chrom[MAX_FEATURE];                         // Current chromosome
-  int curr_len;                                         // Current length
+  args_p_struct arguments;                             // Struct for handling command line parameters
+  FILE* tmprofiles_file;                               // Temporal output file descriptor
+  FILE* profiles_file;                                 // Profiles output file desciptor
+  FILE* contigs_file;                                  // Contigs output file descriptor
+  char* tmprofiles_file_name;                          // Absolute path of the temporal output file
+  char* profiles_file_name;                            // Absolute path of the profiles output file
+  char* contigs_file_name;                             // Absolute path of the contigs output file
+  samfile_t* replicate_file[MAX_REPLICATES];           // Array of BAM file descriptors
+  alignment_struct current_alignments[MAX_REPLICATES]; // Array of alignment_struct struct
+  int result;                                          // Result of any operation
+  int results[MAX_REPLICATES];                         // Replicate-specific results
+  char* error_message;                                 // Error message to display in case of abnormal termination
+  contig_struct contig_fwd, contig_rev;                // Struct for building profiles
+  int i, j, index, chridx, blkidx, maxstart;           // Multi-purpose indexes and checkpoint variables
+  char curr_chrom[MAX_FEATURE];                        // Current chromosome
+  int curr_len;                                        // Current length
+  int ncontigs;                                        // Number of contigs
+  int** reads_per_contig;                              // Data matrix containing number of reads per contig and replicate
+  double** five_prime;                                 // Data matrix containing number of reads per nucleotide and contig in 5'-end
+  double** three_prime;                                // Data matrix containing number of reads per nucleotide and contig in 3'-end
+  profile_struct profile;                              // Profile struct
 
-  // Initialize options with default values. Parse command line.
-  // Exit if command is not well-formed.
+  // Initialize options with default values
+  arguments.number_replicates = MAX_REPLICATES;
   arguments.min_len = MIN_LEN;
   arguments.max_len = MAX_LEN;
   arguments.spacing = SPACING;
   arguments.min_reads = MIN_READS;
-  arguments.trimming = TRIMMING;
   arguments.replicate_treat = REPLICATE_POOL;
   arguments.replicate_number = REPLICATE_NUMBER;
-  arguments.number_replicates = MAX_REPLICATES;
   arguments.idr_method = IDR_COMMON;
   arguments.idr_cutoff = CUTOFF;
   arguments.read_length = MAX_READ_LENGTH;
   arguments.min_read_len = MIN_READ_LEN;
+  arguments.trim_threshold = TRIM_THRESHOLD;
+  arguments.trim_min = TRIM_MIN;
+  arguments.trim_max = TRIM_MAX;
+
+  // Parse command line
+  // Exit if command is not well-formed
   if (parse_command_line_p(argc, argv, &error_message, &arguments) < 0) {
     fprintf(stderr, "%s\n", error_message);
     if ((strcmp(error_message, PROFILES_HELP_MSG) == 0) || (strcmp(error_message, VERSION_MSG) == 0))
@@ -154,7 +167,7 @@ int profiles_sc(int argc, char **argv)
   }
 
   // Check that all the replicates have reads in the same chromosomes
-  // TODO -> replicates can have different number of chromosomes
+  // TODO => replicates can have different number of chromosomes
   result = replicate_file[0]->header->n_targets;
   for (i = 1; i < arguments.number_replicates; i++) {
     if (replicate_file[0]->header->n_targets != result) {
@@ -171,27 +184,26 @@ int profiles_sc(int argc, char **argv)
     }
   }
 
-  // Open output files for writing results.
-  // Exit if output files do not exist or are not readable.
-  char *profiles_file_name = malloc((MAX_PATH + strlen(PROFILES_SUFFIX) + 2) * sizeof(char));
-  char *contigs_file_name = malloc((MAX_PATH + strlen(CONTIGS_SUFFIX) + 2) * sizeof(char));
+  // Build absolute paths for temporal and output files
+  tmprofiles_file_name = malloc((MAX_PATH + strlen(TMPROFILES_SUFFIX) + 2) * sizeof(char));
+  strncpy(tmprofiles_file_name, arguments.output_f_path, MAX_PATH);
+  strcat(tmprofiles_file_name, PATH_SEPARATOR);
+  strcat(tmprofiles_file_name, TMPROFILES_SUFFIX);
+  profiles_file_name = malloc((MAX_PATH + strlen(PROFILES_SUFFIX) + 2) * sizeof(char));
   strncpy(profiles_file_name, arguments.output_f_path, MAX_PATH);
   strcat(profiles_file_name, PATH_SEPARATOR);
   strcat(profiles_file_name, PROFILES_SUFFIX);
+  contigs_file_name = malloc((MAX_PATH + strlen(CONTIGS_SUFFIX) + 2) * sizeof(char));
   strncpy(contigs_file_name, arguments.output_f_path, MAX_PATH);
   strcat(contigs_file_name, PATH_SEPARATOR);
   strcat(contigs_file_name, CONTIGS_SUFFIX);
-  profiles_file = fopen(profiles_file_name, "w");
-  contigs_file = fopen(contigs_file_name, "w");
-  if (!profiles_file || !contigs_file) {
+
+  // Open temporal output file for writing temporal results
+  tmprofiles_file = fopen(tmprofiles_file_name, "w");
+  if (!tmprofiles_file) {
     fprintf(stderr, "%s\n", ERR_OUTPUT_F_NOT_WRITABLE);
     return (1);
   }
-  free(profiles_file_name);
-  free(contigs_file_name);
-
-  // Allocate memory for profiles
-  profiles = (profile_struct*) malloc(MAX_CONTIGS * sizeof(profile_struct));
 
   // Initialize variables for reading BAM files
   // Exit if BAM files are truncated or ill-formed, or if not enough memory
@@ -226,7 +238,7 @@ int profiles_sc(int argc, char **argv)
     int alignment_counter = 0;
     heap_struct sorter; 
 
-    alignments = (alignment_struct*) malloc (MAX_BLOCK * arguments.read_length * 2 * arguments.number_replicates * sizeof(alignment_struct));//TODO
+    alignments = (alignment_struct*) malloc (MAX_BLOCK * arguments.read_length * 2 * arguments.number_replicates * sizeof(alignment_struct));//TODO -> code read length in arguments
 
     // Add all the reads in replicates to the alignments vector.
     // Collapse all the identical reads into one single alignment.
@@ -272,13 +284,13 @@ int profiles_sc(int argc, char **argv)
       alignment_struct* algn = deletebh(&sorter);
 
       if (algn->strand == FWD_STRAND) {
-        if (parse_alignment(&arguments, algn, &profiles[index], &contig_fwd, &index) < 0) {
+        if (parse_alignment(&arguments, algn, &contig_fwd, tmprofiles_file) < 0) {
           fprintf(stderr, "%s\n", ERR_REALLOC_FAILED);
           return(1);
         }
       }
       else {
-        if (parse_alignment(&arguments, algn, &profiles[index], &contig_rev, &index) < 0) {
+        if (parse_alignment(&arguments, algn, &contig_rev, tmprofiles_file) < 0) {
           fprintf(stderr, "%s\n", ERR_REALLOC_FAILED);
           return(1);
         }
@@ -312,133 +324,189 @@ int profiles_sc(int argc, char **argv)
   }
 
   // Flush the contig contents in the forward contig struct
-  profiles[index].nreads = (int*) malloc(sizeof(int) * arguments.number_replicates);
-  for (i = 0; i < arguments.number_replicates; i++) profiles[index].nreads[i] = contig_fwd.nreads[i];
-  strncpy(profiles[index].chromosome, contig_fwd.chromosome, MAX_FEATURE);
-  profiles[index].start = contig_fwd.start;
-  profiles[index].end = contig_fwd.end;
-  profiles[index].length = (contig_fwd.end - contig_fwd.start + 1);
-  profiles[index].strand = FWD_STRAND;
+  fprintf(tmprofiles_file, "%s", contig_fwd.chromosome);
+  fprintf(tmprofiles_file, "\t%d", contig_fwd.start);
+  fprintf(tmprofiles_file, "\t%d", contig_fwd.end);
+  fprintf(tmprofiles_file, "\t%d", FWD_STRAND);
+  fprintf(tmprofiles_file, "\t%d", arguments.number_replicates);
+  for (i = 0; i < arguments.number_replicates; i++) fprintf(tmprofiles_file, "\t%d", contig_fwd.nreads[i]);
+  free(contig_fwd.nreads);
 
   // Flush the profile contents in the forward contig struct if allowed by parameters
   if ((gsl_stats_max(contig_fwd.profile, 1, (contig_fwd.end - contig_fwd.start + 1)) >= arguments.min_reads) &&  // Contig has more than r reads
       ((contig_fwd.end - contig_fwd.start + 1) >= arguments.min_len))                                            // Contig has, at most, M nucleotides
   {
-    profiles[index].valid = 1;
-    profiles[index].profile = (double*) malloc(sizeof(double) * (contig_fwd.end - contig_fwd.start + 1));
+    fprintf(tmprofiles_file, "\t%d", contig_fwd.end - contig_fwd.start + 1);
     for (i = 0; i < (contig_fwd.end - contig_fwd.start + 1); i++) {
       if (arguments.replicate_treat == REPLICATE_MEAN)
-        profiles[index].profile[i] = contig_fwd.profile[i] / ((double) arguments.number_replicates);
+        fprintf(tmprofiles_file, "\t%f", contig_fwd.profile[i] / ((double) arguments.number_replicates));
       else
-        profiles[index].profile[i] = contig_fwd.profile[i];
+        fprintf(tmprofiles_file, "\t%f", contig_fwd.profile[i]);
     }
+    fprintf(tmprofiles_file, "\n");
   }
   else
-    profiles[index].valid = 0;
-  index++;
+    fprintf(tmprofiles_file, "\t%d\n", 0);
+  free(contig_fwd.profile);
 
   // Flush the contents in the reverse contig struct
-  profiles[index].nreads = (int*) malloc(sizeof(int) * arguments.number_replicates);
-  for (i = 0; i < arguments.number_replicates; i++) profiles[index].nreads[i] = contig_rev.nreads[i];
-  strncpy(profiles[index].chromosome, contig_rev.chromosome, MAX_FEATURE);
-  profiles[index].start = contig_rev.start;
-  profiles[index].end = contig_rev.end;
-  profiles[index].length = (contig_rev.end - contig_rev.start + 1);
-  profiles[index].strand = REV_STRAND;
+  fprintf(tmprofiles_file, "%s", contig_rev.chromosome);
+  fprintf(tmprofiles_file, "\t%d", contig_rev.start);
+  fprintf(tmprofiles_file, "\t%d", contig_rev.end);
+  fprintf(tmprofiles_file, "\t%d", REV_STRAND);
+  fprintf(tmprofiles_file, "\t%d", arguments.number_replicates);
+  for (i = 0; i < arguments.number_replicates; i++) fprintf(tmprofiles_file, "\t%d", contig_rev.nreads[i]);
+  free(contig_rev.nreads);
 
   // Flush the profile contents in the reverse contig struct if allowed by parameters
   if ((gsl_stats_max(contig_rev.profile, 1, (contig_rev.end - contig_rev.start + 1)) >= arguments.min_reads) &&  // Contig has more than r reads
       ((contig_rev.end - contig_rev.start + 1) >= arguments.min_len))                                            // Contig has, at most, M nucleotides
   {
-    profiles[index].valid = 1;
-    profiles[index].profile = (double*) malloc(sizeof(double) * (contig_rev.end - contig_rev.start + 1));
+    fprintf(tmprofiles_file, "\t%d", contig_rev.end - contig_rev.start + 1);
     for (i = 0; i < (contig_rev.end - contig_rev.start + 1); i++) {
       if (arguments.replicate_treat == REPLICATE_MEAN)
-        profiles[index].profile[i] = contig_rev.profile[i] / ((double) arguments.number_replicates);
+        fprintf(tmprofiles_file, "\t%f", contig_rev.profile[contig_rev.end - contig_rev.start - i] / ((double) arguments.number_replicates));
       else
-        profiles[index].profile[i] = contig_rev.profile[i];
+        fprintf(tmprofiles_file, "\t%f", contig_rev.profile[contig_rev.end - contig_rev.start - i]);
     }
+    fprintf(tmprofiles_file, "\n");
   }
   else
-    profiles[index].valid = 0;
-  index++;
+    fprintf(tmprofiles_file, "\t%d\n", 0);
+  free(contig_rev.profile);
+  fclose(tmprofiles_file);
 
-  // Parse all the contigs and calculate irreproducibility scores
-  fprintf(stderr, "[LOG] CALCULATING IRREPRODUCIBILITY SCORES\n");
-  if (arguments.idr_method == IDR_SERE)
-    calculate_sere_scores(profiles, index, arguments.number_replicates, arguments.idr_cutoff);
-  else if (arguments.idr_method == IDR_COMMON)
-    calculate_common_scores(profiles, index, arguments.number_replicates);
-  else if (arguments.idr_method == IDR_IDR)
-    calculate_npidr_scores(profiles, index, arguments.number_replicates, arguments.idr_cutoff);
-
-  // Print contigs
-  fprintf(stderr, "[LOG] FILTERING AND PRINTING PROFILES\n");
-  for(i = 0; i < index; i++) {
-    if (profiles[i].strand == FWD_STRAND)
-      fprintf(contigs_file, "%s\t%d\t%d\t+", profiles[i].chromosome, profiles[i].start, profiles[i].end);
-    else
-      fprintf(contigs_file, "%s\t%d\t%d\t-", profiles[i].chromosome, profiles[i].start, profiles[i].end);
-
-    for (j = 0; j < arguments.number_replicates; j++)
-      fprintf(contigs_file, "\t%d", profiles[i].nreads[j]);
-
-    fprintf(contigs_file, "\t%f\n", profiles[i].idr_score);
+  // Count lines in profiles file
+  tmprofiles_file = fopen(tmprofiles_file_name, "r");
+  if (!tmprofiles_file) {
+    fprintf(stderr, "%s\n", ERR_INPUT_F_NOT_READABLE);
+    return (1);
   }
+  ncontigs = wcl(tmprofiles_file);
+  fclose(tmprofiles_file);
+  
+  // Allocate memory for storing irreproducibility data
+  // Allocate memory for storing trimming data
+  reads_per_contig = (int**) malloc(ncontigs * sizeof(int*));
+  for (i = 0; i < ncontigs; i++) reads_per_contig[i] = (int*) malloc(arguments.number_replicates * sizeof(int));
+  five_prime = (double**) malloc(arguments.max_len * sizeof(double*));
+  three_prime = (double**) malloc(arguments.max_len * sizeof(double*));
+  for (i = 0; i < arguments.max_len; i++) {
+    five_prime[i] = malloc(ncontigs * sizeof(double));
+    three_prime[i] = malloc(ncontigs * sizeof(double));
+  }
+  
+  // Read profiles and store irreproducibility and trimming data
+  tmprofiles_file = fopen(tmprofiles_file_name, "r");
+  if (!tmprofiles_file) {
+    fprintf(stderr, "%s\n", ERR_INPUT_F_NOT_READABLE);
+    return (1);
+  }
+  index = 0;
+  while((result = next_tmprofile(tmprofiles_file, &profile) > 0)) {
+    for (i = 0; i < arguments.number_replicates; i++)
+      reads_per_contig[index][i] = profile.nreads[i];
 
-  // Print profiles
-  for (i = 0; i < index; i++) {
-    int startfp, endtp;
-
-    // Trim 5' end of the profile
-    if (profiles[i].valid) {
-      j = 0; stop = 0;
-      while (!stop) {
-        if (profiles[i].profile[j] > arguments.trimming) {
-          stop++;
-          startfp = j;
-        }
-        else if (j == profiles[i].end - profiles[i].start) stop++;
-        else j++;
+    if (profile.valid) {
+      for (i = 0; i < MIN(arguments.max_len, profile.length); i++) {
+        five_prime[i][index] = profile.profile[i];
+        three_prime[i][index] = profile.profile[MIN(arguments.max_len, profile.length) - i - 1];
       }
-
-      // Trim 3' end of the profile
-      j = profiles[i].end - profiles[i].start; stop = 0;
-      while (!stop) {
-        if (profiles[i].profile[j] > arguments.trimming) {
-          stop++;
-          endtp = j;
-        }
-        else if (j == 0) stop++;
-        else j--;
+      while(i < arguments.max_len) {
+        five_prime[i][index] = 0;
+        three_prime[i][index] = 0;
+        i++;
       }
-
-      profiles[i].length = endtp - startfp + 1;
-      profiles[i].valid = ((profiles[i].length >= arguments.min_len) && (profiles[i].length <= arguments.max_len));
     }
 
-    // Print profile if allowed by parameters
-    if (profiles[i].valid) {
-      if (profiles[i].strand == FWD_STRAND)
-        fprintf(profiles_file, "%s:%d-%d:+", profiles[i].chromosome, profiles[i].start + startfp, profiles[i].start + endtp);
-      else
-        fprintf(profiles_file, "%s:%d-%d:-", profiles[i].chromosome, profiles[i].start + startfp, profiles[i].start + endtp);
+    free(profile.nreads);
+    if (profile.free) free(profile.profile);
+    index++;
+  }
+  if (result < 0) {
+    fprintf(stderr, "%s\n", ERR_INPUT_F_NOT_READABLE);
+    return(1);
+  }
+  fclose(tmprofiles_file);
 
-      if (profiles[i].strand == FWD_STRAND)
-        for (j = startfp; j <= endtp; j++) fprintf(profiles_file, "\t%f", profiles[i].profile[j]);
-      else
-        for (j = endtp; j >= startfp; j--) fprintf(profiles_file, "\t%f", profiles[i].profile[j]);
+  // Open temporal file for reading profiles
+  // Open profiles and contigs output files for writing results
+  fprintf(stderr, "[LOG] CALCULATING IRREPRODUCIBILITY SCORES\n");
+  tmprofiles_file = fopen(tmprofiles_file_name, "r");
+  profiles_file = fopen(profiles_file_name, "w");
+  contigs_file = fopen(contigs_file_name, "w");
+  if (!tmprofiles_file) {
+    fprintf(stderr, "%s\n", ERR_INPUT_F_NOT_READABLE);
+    return (1);
+  }
+  if (!profiles_file || !contigs_file) {
+    fprintf(stderr, "%s\n", ERR_OUTPUT_F_NOT_WRITABLE);
+    return (1);
+  }
 
+  // Read profiles and print results
+  index = 0;
+  while((result = next_tmprofile(tmprofiles_file, &profile) > 0)) {
+
+    // Calculate irreproducibility scores
+    if (arguments.idr_method == IDR_SERE) 
+      calculate_sere_score(&profile, reads_per_contig, ncontigs, arguments.number_replicates, arguments.idr_cutoff);
+    else if (arguments.idr_method == IDR_COMMON)
+      calculate_common_score(&profile, arguments.number_replicates);
+    else if (arguments.idr_method == IDR_IDR)
+      calculate_npidr_score(&profile, reads_per_contig, index, ncontigs, arguments.number_replicates, arguments.idr_cutoff);
+    else
+      profile.idr_score = 0;
+
+    // Print contig
+    fprintf(contigs_file, "%s\t%d\t%d\t%s", profile.chromosome, profile.start, profile.end, STR(profile.strand));
+    for (i = 0; i < arguments.number_replicates; i++)
+      fprintf(contigs_file, "\t%d", profile.nreads[i]);
+    fprintf(contigs_file, "\t%f\n", profile.idr_score);
+
+    // Trim
+    if (profile.valid)
+      trim(&profile, &arguments, five_prime, three_prime);
+
+    // Print profile
+    if (profile.valid) {
+      fprintf(profiles_file, "%s:%d-%d:%s", profile.chromosome, profile.start, profile.end, STR(profile.strand));
+      for (i = 0; i < profile.length; i++)
+        fprintf(profiles_file, "\t%f", profile.profile[i]);
       fprintf(profiles_file, "\n");
     }
+
+    // Free structures in profile
+    free(profile.nreads);
+    if (profile.free) free(profile.profile);
+
+    index++;
   }
 
-  // Close file descriptors and free
-  free(profiles);
-  for(i = 0; i < arguments.number_replicates; i++)
-    samclose(replicate_file[i]);
+  // Close file descriptors
+  fclose(tmprofiles_file);
   fclose(profiles_file);
   fclose(contigs_file);
+  for(i = 0; i < arguments.number_replicates; i++)
+    samclose(replicate_file[i]);
+
+  // Delete temporary files
+  result = unlink(tmprofiles_file_name);
+
+  // Free pointers
+  free(tmprofiles_file_name);
+  free(profiles_file_name);
+  free(contigs_file_name);
+  for (i = 0; i < index; i++)
+    free(reads_per_contig[i]);
+  free(reads_per_contig);
+  for (i = 0; i < arguments.max_len; i++) {
+    free(five_prime[i]);
+    free(three_prime[i]);
+  }
+  free(five_prime);
+  free(three_prime);
+
   return(0);
 }
 /* END OF FILE */

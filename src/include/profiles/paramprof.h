@@ -76,3 +76,18 @@ int parse_replicates_parameters(char* option, char** error_message, args_p_struc
  * @return -1 if an error occurred. 0 otherwise.
  */
 int parse_profiles_parameters(char* option, char** error_message, args_p_struct* arguments);
+
+/*
+ * parse_trimming_parameters
+ *   Parses the string defining the trimming options
+ *
+ * @arg char* option
+ *   String defining the trimming options
+ * @arg char** error_message
+ *   Pointer to a char array where to store the error message
+ * @args args_p_struct* arguments
+ *   Pointer to the argument handler
+ *
+ * @return -1 if an error occurred. 0 otherwise.
+ */
+int parse_trimming_parameters(char* option, char** error_message, args_p_struct* arguments);

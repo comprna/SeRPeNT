@@ -81,10 +81,23 @@
  * ERROR : Invalid minimum height value
  */
 #define ERR_INVALID_minheight_VALUE "Minimum height <minheight> must be an integer number greater than 0"
+
 /*
  * ERROR : Invalid argument for -t option
  */
-#define ERR_INVALID_trimming_VALUE "Number of bases to trim <trimming> must be an integer number greater or equal to 0"
+#define ERR_INVALID_t_VALUE "Invalid argument for option -t"
+/*
+ * ERROR : Invalid trimming threshold
+ */
+#define ERR_INVALID_trimthreshold_VALUE "Trimming threshold <trim_threshold> must be a number between 0 and 1"
+/*
+ * ERROR : Invalid trimming minimum value
+ */
+#define ERR_INVALID_trimin_VALUE "Trimming minimum height <trim_min> must be an integer number greater or equal to 0"
+/*
+ * ERROR : Invalid maximum trimming value
+ */
+#define ERR_INVALID_trimax_VALUE "Trimming maximum height <trim_max> must be an integer number greater or equal than <trim_min>"
 
 /*
  * ERROR : Invalid argument for -a option

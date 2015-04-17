@@ -17,7 +17,7 @@
  * @args double cutoff
  *   Threshold for irreproducibility acceptance
  */
-void calculate_sere_scores(profile_struct* profiles, int n_contigs, int n_replicates, double cutoff);
+void calculate_sere_score(profile_struct* profile, int** reads_per_contig, int n_contigs, int n_replicates, double cutoff);
 
 /*
  * calculate_common_scores
@@ -30,7 +30,7 @@ void calculate_sere_scores(profile_struct* profiles, int n_contigs, int n_replic
  * @args int n_replicates
  *   Total number of replicates
  */
-void calculate_common_scores(profile_struct* profiles, int n_contigs, int n_replicates);
+void calculate_common_score(profile_struct* profile, int n_replicates);
 
 /*
  * calculate_npidr_scores
@@ -49,4 +49,4 @@ void calculate_common_scores(profile_struct* profiles, int n_contigs, int n_repl
  * @args double cutoff
  *   Threshold for irreproducibility acceptance
  */
-void calculate_npidr_scores(profile_struct* profiles, int n_contigs, int n_replicates, double cutoff);
+void calculate_npidr_score(profile_struct* profiles, int** reads_per_contig, int index, int n_contigs, int n_replicates, double cutoff);

@@ -24,6 +24,11 @@
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 /*
+ * STR macro
+ */
+#define STR(a) ((a > 0)?("-"):("+"))
+
+/*
  * Default value for read_minlen parameter
  */
 #define MIN_READ_LEN 0
@@ -49,9 +54,19 @@
 #define MIN_READS 10.0f
 
 /*
- * Default value for trimming parameter
+ * Default value for trimming threshold parameter
  */
-#define TRIMMING 1
+#define TRIM_THRESHOLD 0.05
+
+/*
+ * Default value for minimum trimming parameter
+ */
+#define TRIM_MIN 2
+
+/*
+ * Default value for maximum trimming parameter
+ */
+#define TRIM_MAX 20
 
 /*
  * Default value for IDR cutoff
@@ -133,7 +148,7 @@
 /*
  * Maximum number of block base pairs
  */
-#define MAX_BLOCK 10000
+#define MAX_BLOCK 3000
 
 /*
  * Alignment strand
@@ -170,6 +185,7 @@
 #define CROSSCOR_SUFFIX "crosscor.dat"
 #define CLUSTERS_SUFFIX "clusters.neWick"
 #define ANNOTATION_O_SUFFIX "annotation.bed" 
+#define TMPROFILES_SUFFIX "tmprofiles.dat"
 
 /*
  * Maximum N limit for gaussian white noise generation

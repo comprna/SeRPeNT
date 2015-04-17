@@ -54,14 +54,21 @@ The srnap subcommands include:
                   - <replicate:repnumber> : Profiles are built by using only the reads of the <repnumber> replicate.
                 [ Default is pool ]
 
+           -t   Trimming
+                Format is <trim_threshold:trim_min:trim_max>
+                  - <trim_percentage> is the trimming threshold. Nucleotides in the ends of the profile having less than <trim_precentage> percent of reads compared to the
+                                      maximum height will be trimmed.
+                  - <trim_min> is the trimming minimum height. All nucleotides in both ends of the profile having less than <trim_min> reads will be trimmed.
+                  - <trim_max> is the trimming maximum height. No nucleotides in both ends of the profile having more than <trim_max> reads will be trimmed.
+                [ Default is 0.1:2:10 ]
+
            -p   Profile definition
                 Format is <minlen:maxlen:spacing:minheight:trimming>, where:
-                  - <minlen> is the minimum length of the profile. Profiles shorter than <minlen> are not reported. Must be > 5.
-                  - <maxlen> is the maximum length of the profile. Profiles longer than <maxlen> are not reported. Must be >= minlen.
+                  - <minlen> is the minimum length of the profile after trimming. Profiles shorter than <minlen> are not reported. Must be > 5.
+                  - <maxlen> is the maximum length of the profile after trimming. Profiles longer than <maxlen> are not reported. Must be >= minlen.
                   - <spacing> is the maximum distance between profiles. Profiles separated by <spacing> or less bp are merged into one single profile. Must be >= 0.
                   - <minheight> is the minimum number of piled-up reads. Profiles that have less than <minheight> piled-up reads are not reported. Must be > 0.
-                  - <trimming> is the number of bases to trim. Bases in the 5' and 3' sites of the profile that have less than <trimming> piled-up reads are trimmed. Must be >= 0.
-                [ Default is 16:200:20:50:5 ]
+                [ Default is 16:200:20:50 ]
 
 **Output** :
 

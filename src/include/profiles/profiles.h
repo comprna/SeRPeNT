@@ -2,6 +2,8 @@
 #include <profiles/alignio.h>
 #include <profiles/bheap.h>
 #include <profiles/idr.h>
+#include <profiles/trimming.h>
+#include <annotate/iofile.h>
 
 /*
  * Application entry point

@@ -11,7 +11,7 @@ int parse_command_line_p(int argc, char** argv, char** error_message, args_p_str
   char carg;
   int terminate = 0;
 
-  while(((carg = getopt(argc, argv, "hvf:p:r:i:")) != -1) && (terminate >= 0)) {
+  while(((carg = getopt(argc, argv, "hvf:p:r:i:t:")) != -1) && (terminate >= 0)) {
     switch (carg) {
       case 'h':
         terminate--;
@@ -32,6 +32,9 @@ int parse_command_line_p(int argc, char** argv, char** error_message, args_p_str
         break;
       case 'p':
         terminate = parse_profiles_parameters(optarg, error_message, arguments);
+        break;
+      case 't':
+        terminate = parse_trimming_parameters(optarg, error_message, arguments);
         break;
       case '?':
         terminate--;
@@ -246,20 +249,66 @@ int parse_profiles_parameters(char* option, char** error_message, args_p_struct*
     return(-1);
   }
 
-  if ((token = strtok(NULL, ":")) != NULL) {
-    arguments->trimming = atoi(token);
-    if (arguments->trimming < 0) {
-      *error_message = ERR_INVALID_trimming_VALUE;
-      return(-1);
-    }
-  }
-  else {
+  if (((token = strtok(NULL, ":")) != NULL)) {
     *error_message = ERR_INVALID_p_VALUE;
     return(-1);
   }
 
+  return(0);
+}
+
+/*
+ * parse_trimming_parameters
+ *
+ * @see include/profiles/parse_trimming_parameters
+ */
+int parse_trimming_parameters(char* option, char** error_message, args_p_struct* arguments)
+{
+  char* token;
+
+  if (strchr(option, ':') == NULL) {
+    *error_message = ERR_INVALID_t_VALUE;
+    return(-1);
+  }
+
+  if ((token = strtok(option, ":")) != NULL) {
+    arguments->trim_threshold = atof(token);
+    if ((arguments->trim_threshold < 0) || (arguments->trim_threshold > 1)) {
+      *error_message = ERR_INVALID_trimthreshold_VALUE;
+      return(-1);
+    }
+  }
+  else {
+    *error_message = ERR_INVALID_t_VALUE;
+    return(-1);
+  }
+
+  if ((token = strtok(NULL, ":")) != NULL) {
+    arguments->trim_min = atoi(token);
+    if (arguments->trim_min < 0) {
+      *error_message = ERR_INVALID_trimin_VALUE;
+      return(-1);
+    }
+  }
+  else {
+    *error_message = ERR_INVALID_t_VALUE;
+    return(-1);
+  }
+
+  if ((token = strtok(NULL, ":")) != NULL) {
+    arguments->trim_max = atoi(token);
+    if (arguments->trim_max < arguments->trim_min) {
+      *error_message = ERR_INVALID_trimax_VALUE;
+      return(-1);
+    }
+  }
+  else {
+    *error_message = ERR_INVALID_t_VALUE;
+    return(-1);
+  }
+
   if (((token = strtok(NULL, ":")) != NULL)) {
-    *error_message = ERR_INVALID_p_VALUE;
+    *error_message = ERR_INVALID_t_VALUE;
     return(-1);
   }
 

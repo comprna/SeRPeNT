@@ -37,4 +37,6 @@ int next_alignment(samfile_t *bam_file, alignment_struct *alignment, int replica
  * @return
  *   -1 if memory corruption. 0 otherwise.
  */
-int parse_alignment(const args_p_struct *arguments, const alignment_struct *alignment, profile_struct *current_profile, contig_struct *primary, int *index);
+int parse_alignment(const args_p_struct *arguments, const alignment_struct *alignment, contig_struct *primary, FILE* tmprofiles_file);
+
+int next_tmprofile(FILE* fp, profile_struct* profile);

@@ -72,7 +72,7 @@ int next_alignment(samfile_t *bam_file, alignment_struct *alignment, int replica
  *
  * @see include/profiles/alignio.h
  */
-int parse_alignment(const args_p_struct *arguments, const alignment_struct *alignment, profile_struct *current_profile, contig_struct *primary, int *index)
+int parse_alignment(const args_p_struct *arguments, const alignment_struct *alignment, contig_struct *primary, FILE* tmprofiles_file)
 {
   // FIRST alignment
   if (primary->start == 0) {
@@ -112,8 +112,10 @@ int parse_alignment(const args_p_struct *arguments, const alignment_struct *alig
     //                         chr A                    spacing |-------|
     else if (strcmp(alignment->chromosome, primary->chromosome) == 0 && alignment->start <= (primary->end + arguments->spacing + 1) && alignment->end > primary->start) {
       double *profile_realloc = (double*) realloc(primary->profile, sizeof(double) * (alignment->end - primary->start + 1));
-      if (profile_realloc == NULL)
+      if (profile_realloc == NULL) {
+        free(primary->profile);
         return(-1);
+      }
       primary->profile = profile_realloc;
       int i;
       for (i = (primary->end - primary->start + 1); i < (alignment->end - primary->start + 1); i++) primary->profile[i] = 0;
@@ -132,40 +134,41 @@ int parse_alignment(const args_p_struct *arguments, const alignment_struct *alig
       int i;
 
       // Store contig data
-      current_profile->nreads = (int*) malloc(sizeof(int) * arguments->number_replicates);
-      for (i = 0; i < arguments->number_replicates; i++) current_profile->nreads[i] = primary->nreads[i];
-      strncpy(current_profile->chromosome, primary->chromosome, MAX_FEATURE);
-      current_profile->start = primary->start;
-      current_profile->end = primary->end;
-      current_profile->length = (primary->end - primary->start + 1);
-      current_profile->strand = alignment->strand;
+      fprintf(tmprofiles_file, "%s", primary->chromosome);
+      fprintf(tmprofiles_file, "\t%d", primary->start);
+      fprintf(tmprofiles_file, "\t%d", primary->end);
+      fprintf(tmprofiles_file, "\t%d", alignment->strand);
+      fprintf(tmprofiles_file, "\t%d", arguments->number_replicates);
+      for (i = 0; i < arguments->number_replicates; i++) fprintf(tmprofiles_file, "\t%d", primary->nreads[i]);
 
       // Store profile data if allowed by parameters -> memory reduction
       if ((gsl_stats_max(primary->profile, 1, (primary->end - primary->start + 1)) >= arguments->min_reads) &&  // Contig has more than r reads
           ((primary->end - primary->start + 1) >= arguments->min_len))                                          // Contig has, at most, M nucleotides
       {
-        current_profile->valid = 1;
-        current_profile->profile = (double*) malloc(sizeof(double) * (primary->end - primary->start + 1));
+        fprintf(tmprofiles_file, "\t%d", primary->end - primary->start + 1);
         for (i = 0; i < (primary->end - primary->start + 1); i++) {
+          int idx = i;
+          if (alignment->strand == REV_STRAND)
+            idx = primary->end - primary->start - i;
           if (arguments->replicate_treat == REPLICATE_MEAN)
-            current_profile->profile[i] = primary->profile[i] / ((double) arguments->number_replicates);
+            fprintf(tmprofiles_file, "\t%f", primary->profile[idx] / ((double) arguments->number_replicates));
           else
-            current_profile->profile[i] = primary->profile[i];
+            fprintf(tmprofiles_file, "\t%f", primary->profile[idx]);
         }
+        fprintf(tmprofiles_file, "\n");
       }
       else
-        current_profile->valid = 0;
-
-      // Increment index pointer
-      (*index)++;
+        fprintf(tmprofiles_file, "\t%d\n", 0);
 
       // Restart primary alignment
       primary->start = alignment->start;
       primary->end = alignment->end;
       strncpy(primary->chromosome, alignment->chromosome, MAX_FEATURE);
       double *profile_realloc = (double*) realloc(primary->profile, sizeof(double) * (primary->end - primary->start + 1));
-      if (profile_realloc == NULL)
-        return(1);
+      if (profile_realloc == NULL) {
+        free(primary->profile);
+        return(-1);
+      }
       primary->profile = profile_realloc;
       if ((arguments->replicate_treat != REPLICATE_REPLICATE) || ((arguments->replicate_treat == REPLICATE_REPLICATE) && ((arguments->replicate_number - 1) == alignment->replicate)))
         for (i = 0; i < (primary->end - primary->start + 1); i++) primary->profile[i] = alignment->nreads;
@@ -175,4 +178,97 @@ int parse_alignment(const args_p_struct *arguments, const alignment_struct *alig
   }
 
   return(0);
+}
+
+/*
+ * next_tmprofile
+ *
+ * @see include/profiles/alignio.h
+ */
+int next_tmprofile(FILE* fp, profile_struct* profile)
+{
+  char *line = NULL;
+  char *token;
+  size_t len = 0;
+  ssize_t read;
+  int i, nreads, length;
+
+  profile->free = 0;
+  profile->valid = 0;
+
+  read = getline(&line, &len, fp);
+
+  if (read < 0) {
+    free(line);
+    return(0);
+  }
+
+  if ((token = strtok(line, "\t")) == NULL) {
+    free(line);
+    return(-1);
+  }
+  strcpy(profile->chromosome, token);
+
+  if ((token = strtok(NULL, "\t")) == NULL) {
+    free(line);
+    return(-1);
+  }
+  profile->start = atoi(token);
+
+  if ((token = strtok(NULL, "\t")) == NULL) {
+    free(line);
+    return(-1);
+  }
+  profile->end = atoi(token);
+  profile->length = profile->end - profile->start + 1;
+
+  if ((token = strtok(NULL, "\t")) == NULL) {
+    free(line);
+    return(-1);
+  }
+  profile->strand = atoi(token);
+
+  if ((token = strtok(NULL, "\t")) == NULL) {
+    free(line);
+    return(-1);
+  }
+  nreads = atoi(token);
+
+  profile->nreads = (int*) malloc(nreads * sizeof(int));
+  for (i = 0; i < nreads; i++) {
+    if ((token = strtok(NULL, "\t")) != NULL)
+      profile->nreads[i] = atoi(token);
+    else {
+      free(line);
+      return(-1);
+    }
+  }
+
+  if ((token = strtok(NULL, "\t")) == NULL) {
+    free(line);
+    return(-1);
+  }
+  length = atoi(token);
+
+  if (length == 0) {
+    free(line);
+    profile->valid = 0;
+    return(1);
+  }
+
+  profile->profile = (double*) malloc((profile->end - profile->start + 1) * sizeof(double));
+  profile->free = 1;
+  for (i = 0; i < (profile->end - profile->start + 1); i++) {
+    if ((token = strtok(NULL, "\t")) != NULL)
+      profile->profile[i] = (double) atof(token);
+    else {
+      free(line);
+      return(-1);
+    }
+  }
+
+  profile->valid = 1;
+
+  free(line);
+  return(1);
 }

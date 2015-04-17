@@ -13,7 +13,6 @@ typedef struct {
   int max_len;
   int spacing;
   int min_reads;
-  int trimming;
   int replicate_treat;
   int replicate_number;
   int number_replicates;
@@ -21,6 +20,9 @@ typedef struct {
   double idr_cutoff;
   int read_length;
   int min_read_len;
+  double trim_threshold;
+  int trim_min;
+  int trim_max;
 } args_p_struct;
 
 /*
@@ -49,6 +51,25 @@ typedef struct {
   int32_t strand;
   int* nreads;
   int32_t valid;
+  int32_t free;
+  double idr_score;
+  int additional;
+  char species[MAX_FEATURE];
+  char annotation[MAX_FEATURE];
+  char tmp_annotation[MAX_FEATURE];
+  int cluster;
+  double anscore;
+} profile_struct;
+
+typedef struct {
+  double *profile;
+  char chromosome[MAX_FEATURE];
+  int start;
+  int end;
+  int length;
+  int32_t strand;
+  int* nreads;
+  int32_t valid;
   double idr_score;
   int additional;
   char species[MAX_FEATURE];
@@ -59,7 +80,8 @@ typedef struct {
   double max_height;
   double mean;
   double variance;
-} profile_struct;
+  double noise[MAX_PROFILE_LENGTH];
+} profile_struct_annotation;
 
 /*
  * Struct for handling BAM alighment
@@ -105,7 +127,7 @@ typedef unsigned long count_t;
 struct itnode_struct {
   int low;
   int high;
-  profile_struct* profile;
+  profile_struct_annotation* profile;
   struct itnode_struct* left;
   struct itnode_struct* right;
   int height;

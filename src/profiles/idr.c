@@ -69,40 +69,42 @@ void destroy_hash(struct llist_struct *element)
   free(element);
 }
 
+
 /*
- * calculate_sere_scores
- *
+ * calculate_sere_partials
+ * 
  * @see include/profiles/idr.h
  */
-void calculate_sere_scores(profile_struct* profiles, int n_contigs, int n_replicates, double cutoff)
+void calculate_sere_score(profile_struct* profile, int** reads_per_contig, int n_contigs, int n_replicates, double cutoff)
 {
-  double total_reads_r[MAX_REPLICATES];
-  double total_reads = 0;
+  long total_reads = 0;
   int i, j;
+  double sisqr = 0;
+  double sumyij = 0;
+  long ei = 0;
+  long* reads_per_replicate;
 
-  for (i = 0; i < n_replicates; i++) total_reads_r[i] = 0;
-  for (i = 0; i < n_contigs; i++) for(j = 0; j < n_replicates; j++) total_reads_r[j] += (double) profiles[i].nreads[j];
-  for (i = 0; i < n_replicates; i++) total_reads += total_reads_r[i];
+  reads_per_replicate = (long*) malloc(n_replicates * sizeof(long));
 
-  for (i = 0; i < n_contigs; i++) {
-    double sisqr = 0;
-    double sumyij = 0;
-    double ei = 0;
+  for (i = 0; i < n_replicates; i++) reads_per_replicate[i] = 0;
+  for (i = 0; i < n_contigs; i++) for(j = 0; j < n_replicates; j++) reads_per_replicate[j] += reads_per_contig[i][j];
+  for (i = 0; i < n_replicates; i++) total_reads += reads_per_replicate[i];
 
-    for (j = 0; j < n_replicates; j++) ei += (double) profiles[i].nreads[j];
+  for (i = 0; i < n_replicates; i++) ei += profile->nreads[i];
 
-    for (j = 0; j < n_replicates; j++) {
-      double yij = (double) profiles[i].nreads[j];
-      double estyij = ei * (total_reads_r[j] / total_reads);
-      sumyij += pow(yij - estyij, 2) / estyij;
-    }
-
-    sisqr = (1 / (n_replicates - 1)) * sumyij;
-
-    profiles[i].idr_score = sqrt(sisqr);
-
-    if (profiles[i].idr_score > cutoff) profiles[i].valid = 0;
+  for (i = 0; i < n_replicates; i++) {
+    double yij = (double) profile->nreads[i];
+    double estyij = (double) ei * ((double) reads_per_replicate[i] / (double) total_reads);
+    sumyij += pow(yij - estyij, 2) / estyij;
   }
+
+  sisqr = ((double) 1 / (double) (n_replicates - 1)) * sumyij;
+
+  profile->idr_score = sqrt(sisqr);
+
+  if (profile->idr_score > cutoff) profile->valid = 0;
+
+  free(reads_per_replicate);
 }
 
 
@@ -111,16 +113,21 @@ void calculate_sere_scores(profile_struct* profiles, int n_contigs, int n_replic
  *
  * @see include/profiles/idr.h
  */
-void calculate_common_scores(profile_struct* profiles, int n_contigs, int n_replicates)
+void calculate_common_score(profile_struct* profile, int n_replicates)
 {
-  int i, j;
+  int i;
+  int nreps = 0;
 
-  for (i = 0; i < n_contigs; i++) {
-    int nreps = 0;
-    for (j = 0; j < n_replicates; j++) if (profiles[i].nreads[j] > 0) nreps++;
-      if (nreps < n_replicates)
-        profiles[i].valid = 0;
+  for (i = 0; i < n_replicates; i++)
+    if (profile->nreads[i] > 0)
+      nreps++;
+
+  if (nreps < n_replicates) {
+    profile->valid = 0;
+    profile->idr_score = 0;
   }
+  else
+    profile->idr_score = 1;
 }
 
 
@@ -129,11 +136,15 @@ void calculate_common_scores(profile_struct* profiles, int n_contigs, int n_repl
  *
  * @see include/profiles/idr.h
  */
-void calculate_npidr_scores(profile_struct* profiles, int n_contigs, int n_replicates, double cutoff)
+void calculate_npidr_score(profile_struct* profile, int** reads_per_contig, int index, int n_contigs, int n_replicates, double cutoff)
 {
-  int i, bin_size = 1, pool_type = 2;
+  int i;
   struct llist_struct** elems = (struct llist_struct**) malloc(sizeof(struct llist_struct*) * n_replicates * n_contigs);
   long* result = (long*) malloc(sizeof(long) * n_contigs);
+
+  // Initialize
+  for (i = 0; i < n_replicates * n_contigs; i++)
+    elems[i] = NULL;
 
   // Calculate
   for(i = 0; i < n_contigs; i++) {
@@ -142,36 +153,33 @@ void calculate_npidr_scores(profile_struct* profiles, int n_contigs, int n_repli
     int j = 0, k = 0;
 
     for (k = 0; k < n_replicates; k++) {
-      profiles[i].nreads[k] = profiles[i].nreads[k] / bin_size;
-
-      if (profiles[i].nreads[k] == 0)
+      if (reads_per_contig[i][k] == 0)
         n_zeroes++;
       else
         j = k;
 
-      if (pool_type == 1) res += profiles[i].nreads[k];
-      else if (profiles[i].nreads[k] > res) res = profiles[i].nreads[k];
+      if (reads_per_contig[i][k] > res) res = reads_per_contig[i][k];
 
-      update_hash(elems, profiles[i].nreads[k], ABSOLUTE, n_replicates, n_contigs);
+      update_hash(elems, reads_per_contig[i][k], ABSOLUTE, n_replicates, n_contigs);
     }
 
     if(n_zeroes == (n_replicates - 1))
-      update_hash(elems, profiles[i].nreads[j], CONDITIONAL, n_replicates, n_contigs);
+      update_hash(elems, reads_per_contig[i][j], CONDITIONAL, n_replicates, n_contigs);
 
     result[i] = res;
   }
 
   // Assign npIDR scores
-  for (i = 0; i < n_contigs; i++) {
-    struct llist_struct* element = get_hash(elems, result[i], n_replicates, n_contigs);
+  struct llist_struct* element = get_hash(elems, result[index], n_replicates, n_contigs);
 
-    if (element == NULL)
-      profiles[i].idr_score = 0;
-    else if (element->absolute > 0)
-      profiles[i].idr_score = ((double) element->conditional) / ((double) element->absolute);
-    else
-      profiles[i].idr_score = 0;
-  }
+  if (element == NULL)
+    profile->idr_score = 0;
+  else if (element->absolute > 0)
+    profile->idr_score = ((double) element->conditional) / ((double) element->absolute);
+  else
+    profile->idr_score = 0;
+
+  if (profile->idr_score > cutoff) profile->valid = 0;
 
   // Free structures
   for (i = 0; i < (n_replicates * n_contigs); i++) destroy_hash(elems[i]);

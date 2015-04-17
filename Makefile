@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -g -c -Wall
-OBJS = build/profiles.o build/paramprof.o build/bheap.o build/idr.o build/alignio.o build/xcorr.o build/iofile.o build/paramclust.o build/cluster.o build/hierarchical.o build/itvltree.o build/dtw.o build/profilemap.o build/annotate.o
+OBJS = build/profiles.o build/paramprof.o build/bheap.o build/idr.o build/alignio.o build/trimming.o build/xcorr.o build/iofile.o build/paramclust.o build/cluster.o build/hierarchical.o build/itvltree.o build/dtw.o build/profilemap.o build/annotate.o
 TESTOBJS = build/tcparamprof.o
 
 all : srnap
@@ -52,11 +52,14 @@ iofile.o : setup
 itvltree.o : setup
 	$(CC) $(CFLAGS) src/annotate/itvltree.c -Isrc/include/ -o build/itvltree.o
 
-profiles.o : paramprof.o bheap.o idr.o alignio.o
+profiles.o : paramprof.o bheap.o idr.o trimming.o alignio.o
 	$(CC) $(CFLAGS) src/profiles/profiles.c -Isrc/include -o build/profiles.o
 
 paramprof.o : setup
 	$(CC) $(CFLAGS) src/profiles/paramprof.c -Isrc/include -o build/paramprof.o
+
+trimming.o : setup
+	$(CC) $(CFLAGS) src/profiles/trimming.c -Isrc/include -o build/trimming.o
 
 bheap.o : setup
 	$(CC) $(CFLAGS) src/profiles/bheap.c -Isrc/include -o build/bheap.o
