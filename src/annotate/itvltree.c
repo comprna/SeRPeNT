@@ -36,7 +36,7 @@ int do_overlap(int low_a, int high_a, int low_b, int high_b)
  *   Helper function that allocates a new node with the given key and
  *   NULL left and right pointers
  */
-itnode_struct* new_itnode(int low, int high, profile_struct* profile)
+itnode_struct* new_itnode(int low, int high, profile_struct_annotation* profile)
 {
   itnode_struct* node = (itnode_struct*) malloc(sizeof(struct itnode_struct));
 
@@ -109,7 +109,7 @@ int get_balance(itnode_struct* root)
  *
  * @see include/annotate/itvltree.h
  */
-itnode_struct* insert_itnode(itnode_struct* node, int low, int high, profile_struct* profile)
+itnode_struct* insert_itnode(itnode_struct* node, int low, int high, profile_struct_annotation* profile)
 {
   // Perform the normal BST rotation
   if (node == NULL)

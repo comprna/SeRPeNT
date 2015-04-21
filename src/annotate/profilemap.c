@@ -82,7 +82,7 @@ void map_init(map_struct* map)
  *
  * @see include/annotate/profilemap.h
  */
-void map_add_profile(map_struct* map, profile_struct* profile)
+void map_add_profile(map_struct* map, profile_struct_annotation* profile)
 {
   char* id = (char*) malloc(MAX_FEATURE * sizeof(char));
 

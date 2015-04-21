@@ -21,7 +21,7 @@ int wcl (FILE *fp);
  * @return
  *   1 if more lines available. 0 if no more lines. -1 if file is ill-formatted.
  */
-int next_profile(FILE* fp, profile_struct* profile);
+int next_profile(FILE* fp, profile_struct_annotation* profile);
 
 /*
  * next_profile
@@ -33,7 +33,7 @@ int next_profile(FILE* fp, profile_struct* profile);
  * @return
  *   1 if more lines available. 0 if no more lines. -1 if file is ill-formatted.
  */
-int next_additional_profile(FILE* fp, profile_struct* profile, char* species);
+int next_additional_profile(FILE* fp, profile_struct_annotation* profile, char* species);
 
 /*
  * next_feature

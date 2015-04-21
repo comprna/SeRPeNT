@@ -42,7 +42,7 @@ int map_search(map_struct* map, char* chrom, int strand);
  * @args profile_struct* profile
  *   Profile to be mapped
  */
-void map_add_profile(map_struct* map, profile_struct* profile);
+void map_add_profile(map_struct* map, profile_struct_annotation* profile);
 
 /*
  * map_annotate

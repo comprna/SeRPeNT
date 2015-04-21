@@ -33,7 +33,7 @@ hcnode_struct* hc_cluster(double** correlation, int nprofiles);
  * @arg profile_struct* profiles
  *   An array of profiles for labeling the hierarchical clustering solution
  */
-void hc_print(FILE* fp, hcnode_struct* hc, int nprofiles, profile_struct* profiles);
+void hc_print(FILE* fp, hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles);
 
 /*
  * hc_annotate
@@ -49,4 +49,4 @@ void hc_print(FILE* fp, hcnode_struct* hc, int nprofiles, profile_struct* profil
  * @arg profile_struct* profiles
  *   An array of profiles for labeling the hierarchical clustering solution
  */
-void hc_annotate(hcnode_struct* hc, int nprofiles, profile_struct* profiles, double cutoff);
+void hc_annotate(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, double cutoff);

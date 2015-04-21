@@ -15,7 +15,7 @@
  * @return
  *   The root node of the interval tree
  */
-itnode_struct* insert_itnode(itnode_struct* node, int low, int high, profile_struct* profile);
+itnode_struct* insert_itnode(itnode_struct* node, int low, int high, profile_struct_annotation* profile);
 
 
 /*

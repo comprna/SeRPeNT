@@ -53,12 +53,6 @@ typedef struct {
   int32_t valid;
   int32_t free;
   double idr_score;
-  int additional;
-  char species[MAX_FEATURE];
-  char annotation[MAX_FEATURE];
-  char tmp_annotation[MAX_FEATURE];
-  int cluster;
-  double anscore;
 } profile_struct;
 
 typedef struct {
@@ -68,9 +62,6 @@ typedef struct {
   int end;
   int length;
   int32_t strand;
-  int* nreads;
-  int32_t valid;
-  double idr_score;
   int additional;
   char species[MAX_FEATURE];
   char annotation[MAX_FEATURE];

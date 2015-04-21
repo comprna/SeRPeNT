@@ -1,6 +1,5 @@
 #include <annotate/annotate.h>
 
-
 /*
  * Application entry point
  */
@@ -16,7 +15,7 @@ int annotate_sc(int argc,  char **argv)
   int nprofiles;                                         // Total number of profiles
   double** xcorr;                                        // 2-dimensional matrix containing correlations between profiles
   int i, j, index;                                       // Multi-purpose indexes
-  profile_struct* profiles;                              // Array of profiles
+  profile_struct_annotation* profiles;                   // Array of profiles
   map_struct map;                                        // Profile map
   hcnode_struct *hc;                                     // Hierarchical clustering
 
@@ -90,8 +89,7 @@ int annotate_sc(int argc,  char **argv)
   }
 
   // Allocate memory for profiles
-  profiles = (profile_struct*) malloc(nprofiles * sizeof(profile_struct));
-  xcorr = (double**) malloc(nprofiles * sizeof(double*));
+  profiles = (profile_struct_annotation*) malloc(nprofiles * sizeof(profile_struct_annotation));
   map_init(&map);
 
   // Open profiles file for reading and load them into memory
@@ -173,14 +171,11 @@ int annotate_sc(int argc,  char **argv)
   for (i = 0; i < (nprofiles - 1); i++) {
     xcorr[i][i] = (double) 0.0f;
     for (j = i + 1; j < nprofiles; j++) {
-      int length = MAX(profiles[i].length, profiles[j].length);
-      double* corr = (double*) malloc(length * sizeof(double));
-      int index = nxcorr(corr, profiles[i].profile, profiles[i].length, profiles[j].profile, profiles[j].length);
-      if (corr[index] < 0)
-        corr[index] = 0;
-      xcorr[i][j] = 1 - corr[index];
-      xcorr[j][i] = 1 - corr[index];
-      free(corr);
+      double corr = xdtw(&profiles[i], &profiles[j]);//nxcorr(&profiles[i], &profiles[j]);
+      if (corr < 0)
+        corr = 0;
+      xcorr[i][j] = corr;
+      xcorr[j][i] = corr;
     }
   }
 
@@ -195,7 +190,7 @@ int annotate_sc(int argc,  char **argv)
         fprintf(xcorr_file, "%s:%d-%d:+\t", profiles[j].chromosome, profiles[j].start, profiles[j].end);
       else
         fprintf(xcorr_file, "%s:%d-%d:-\t", profiles[j].chromosome, profiles[j].start, profiles[j].end);
-      fprintf(xcorr_file, "%f\t", (1 - xcorr[i][j]));
+      fprintf(xcorr_file, "%f\t", xcorr[i][j]);
       fprintf(xcorr_file, "%d\n", profiles[i].length - profiles[j].length);
     }
   }
@@ -213,7 +208,7 @@ int annotate_sc(int argc,  char **argv)
     hc_annotate(hc, nprofiles, profiles, arguments.cluster_cutoff);
     for (i = 0; i < nprofiles; i++) {
       if ((!arguments.additional_profiles) || ((arguments.additional_profiles) && (strcmp(profiles[i].species, "\0") != 0))) {
-        profile_struct p = profiles[i];
+        profile_struct_annotation p = profiles[i];
         if (profiles[i].strand == FWD_STRAND) fprintf(annotation_o_file, "%s\t%d\t%d\t%s\t%f\t+\n", p.chromosome, p.start, p.end, p.annotation, p.anscore);
         if (profiles[i].strand == REV_STRAND) fprintf(annotation_o_file, "%s\t%d\t%d\t%s\t%f\t-\n", p.chromosome, p.start, p.end, p.annotation, p.anscore);
       }
@@ -221,11 +216,16 @@ int annotate_sc(int argc,  char **argv)
   }
 
   // Close descriptors, free structures and exit
+  for (i = 0; i < nprofiles; i++)
+    free(profiles[i].profile);
   free(profiles);
-  for (i = 0; i < nprofiles; i++) free(xcorr[i]);
+  for (i = 0; i < nprofiles; i++)
+    free(xcorr[i]);
   free(xcorr);
+  free(hc);
   fclose(xcorr_file);
   fclose(clusters_file);
+  fclose(profiles_file);
   if (arguments.additional_profiles)
     fclose(additional_profiles_file);
   if (arguments.annotation)

@@ -52,7 +52,7 @@ void convert_tree(hcnode_struct* tree, int index)
  * print_tree
  *   Recursive function for hc_print
  */
-void print_tree(FILE* fp, hcnode_struct* hc, int index, profile_struct* profiles)
+void print_tree(FILE* fp, hcnode_struct* hc, int index, profile_struct_annotation* profiles)
 {
   fprintf(fp, "(");
 
@@ -61,7 +61,7 @@ void print_tree(FILE* fp, hcnode_struct* hc, int index, profile_struct* profiles
     print_tree(fp, hc, new_index, profiles);
   }
   else {
-    profile_struct p = profiles[hc[index].left];
+    profile_struct_annotation p = profiles[hc[index].left];
     if (p.strand == FWD_STRAND) fprintf(fp, "%s_%d-%d_+", p.chromosome, p.start, p.end);
     else fprintf(fp, "%s_%d-%d_-", p.chromosome, p.start, p.end);
   }
@@ -73,7 +73,7 @@ void print_tree(FILE* fp, hcnode_struct* hc, int index, profile_struct* profiles
     print_tree(fp, hc, new_index, profiles);
   }
   else {
-    profile_struct p = profiles[hc[index].right];
+    profile_struct_annotation p = profiles[hc[index].right];
     if (p.strand == FWD_STRAND) fprintf(fp, "%s_%d-%d_+", p.chromosome, p.start, p.end);
     else fprintf(fp, "%s_%d-%d_-", p.chromosome, p.start, p.end);
   }
@@ -85,7 +85,7 @@ void print_tree(FILE* fp, hcnode_struct* hc, int index, profile_struct* profiles
  * annotate_tree_r
  *   Recursive function for annotate_tree
  */
-void annotate_tree_r(hcnode_struct* hc, int root, int start, int end, profile_struct* profiles, double** contributions, int* leafs, char** labels)
+void annotate_tree_r(hcnode_struct* hc, int root, int start, int end, profile_struct_annotation* profiles, double** contributions, int* leafs, char** labels)
 {
   int i, j;
 
@@ -122,7 +122,7 @@ void annotate_tree_r(hcnode_struct* hc, int root, int start, int end, profile_st
  * annotate_tree
  *   Auxiliar function for hc_annotate
  */
-void annotate_tree(hcnode_struct* hc, int nprofiles, profile_struct* profiles, int root)
+void annotate_tree(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, int root)
 {
   double** contributions;
   int* leafs;
@@ -201,7 +201,7 @@ hcnode_struct* hc_cluster(double** correlation, int nprofiles)
   int i;
 
   // Perform hierarchical clustering
-  Node* tree = treecluster(nprofiles, nprofiles, NULL, NULL, NULL, 0, 'e', 's', correlation);
+  Node* tree = treecluster(nprofiles, nprofiles, NULL, NULL, NULL, 0, 'e', 'm', correlation);
 
   // Deep copy of nodes
   hc = (hcnode_struct*) malloc((nprofiles - 1) * sizeof(hcnode_struct));
@@ -226,7 +226,7 @@ hcnode_struct* hc_cluster(double** correlation, int nprofiles)
  *
  * @see include/annotate/hierarchical.h
  */
-void hc_print(FILE* fp, hcnode_struct* hc, int nprofiles, profile_struct* profiles)
+void hc_print(FILE* fp, hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles)
 {
   print_tree(fp, hc, nprofiles - 2, profiles);
   fprintf(fp, ";");
@@ -237,7 +237,7 @@ void hc_print(FILE* fp, hcnode_struct* hc, int nprofiles, profile_struct* profil
  *
  * @see include/annotate/hierarchical.h
  */
-void hc_annotate(hcnode_struct* hc, int nprofiles, profile_struct* profiles, double cutoff)
+void hc_annotate(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, double cutoff)
 {
   int i;
   dvnode_struct** distances;
