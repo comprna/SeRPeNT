@@ -54,7 +54,7 @@ void map_sort(map_struct* map)
     p_x = map->elements[i].root;
 
     j = i;
-    while(j >= 0 && strcmp(map->elements[j - 1].identifier, id_x) > 0) {
+    while(j > 0 && strcmp(map->elements[j - 1].identifier, id_x) > 0) {
       strncpy(map->elements[j].identifier, map->elements[j - 1].identifier, MAX_FEATURE);
       map->elements[j].root = map->elements[j - 1].root;
       j--;
@@ -107,7 +107,16 @@ void map_add_profile(map_struct* map, profile_struct_annotation* profile)
 
     // Element does not exist
     if (mapidx < 0) {
-      map->elements = (map_element_struct*) realloc(map->elements, sizeof(map_element_struct) * (map->size + 1));
+      map_element_struct* tmp_map = (map_element_struct*) realloc(map->elements, sizeof(map_element_struct) * (map->size + 1));
+      if (tmp_map == NULL)
+        free(map->elements);
+      map->elements = tmp_map;
+
+      tmp_map = (map_element_struct*) realloc(map->elements, sizeof(map_element_struct) * (map->size + 1));
+      if (tmp_map == NULL)
+        free(map->elements);
+      map->elements = tmp_map;
+
       strncpy(map->elements[map->size].identifier, id, MAX_FEATURE);
       map->elements[map->size].root = insert_itnode(NULL, profile->start, profile->end, profile);
       map->size++;
