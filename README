@@ -78,7 +78,7 @@ The srnap subcommands include:
 
 **Examples** : 
 
-    srnap profiles -f 20 -i sere:2 -r pool -c 20:200:20:50:5 replicate1.bam replicate2.bam output_dir
+    srnap profiles -f 20 -i sere:2 -r pool -p 20:200:20:50:5 replicate1.bam replicate2.bam output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Tool** : annotate
 
@@ -101,9 +101,9 @@ The srnap subcommands include:
                    - <profiles_file> is a profiles file
                  [ No default value ]
 
-            -t   Threshold for label propagation
-                 Format is <threshold>, where:
-                   - <threshold> is the threshold of the hierarchical clustering distance
+            -c   Cutoff for label propagation
+                 Format is <cutoff>, where:
+                   - <cutoff> is the threshold of the hierarchical clustering distance
                  [ Default is 0.80 ]
 
 **Output** :
@@ -116,6 +116,6 @@ The srnap subcommands include:
 
 **Example** :
 
-    srnap annotate -a hsap_micrornas.bed -t 0.95 profiles.dat output_dir
+    srnap annotate -a hsap_micrornas.bed -c 0.95 profiles.dat output_dir
     srnap annotate -a hsap_micrornas.bed -x hsap:hsap_profiles.dat profiles.dat output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
