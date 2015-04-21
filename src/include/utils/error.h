@@ -107,12 +107,12 @@
 /*
  * ERROR : Invalid argument for -x option
  */
-#define ERR_INVALID_x_VALUE "Invalid argument for option -p"
+#define ERR_INVALID_x_VALUE "Invalid argument for option -x"
 
 /*
- * ERROR : Invalid argument for -t option
+ * ERROR : Invalid argument for -c option
  */
-#define ERR_INVALID_t_VALUE "Invalid argument for option -t"
+#define ERR_INVALID_c_VALUE "Invalid argument for option -c"
 
 /*
  * ERROR : BED Format

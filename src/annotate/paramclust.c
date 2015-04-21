@@ -11,7 +11,7 @@ int parse_command_line_c(int argc, char** argv, char** error_message, args_a_str
   char carg;
   int terminate = 0;
 
-  while(((carg = getopt(argc, argv, "hva:x:t:")) != -1) && (terminate >= 0)) {
+  while(((carg = getopt(argc, argv, "hva:x:c:")) != -1) && (terminate >= 0)) {
     switch (carg) {
       case 'h':
         terminate--;
@@ -27,7 +27,7 @@ int parse_command_line_c(int argc, char** argv, char** error_message, args_a_str
       case 'x':
         terminate = parse_additional_profiles_parameters(optarg, error_message, arguments);
         break;
-      case 't':
+      case 'c':
         terminate = parse_threshold_parameters(optarg, error_message, arguments);
         break;
       case '?':
@@ -103,7 +103,7 @@ int parse_threshold_parameters(char* option, char** error_message, args_a_struct
 {
   arguments->cluster_cutoff = atof(option);
   if (arguments->cluster_cutoff < 0) {
-    *error_message = ERR_INVALID_t_VALUE;
+    *error_message = ERR_INVALID_c_VALUE;
     return(-1);
   }
   return(0);
