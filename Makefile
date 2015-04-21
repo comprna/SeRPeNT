@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -g -c -Wall
 OBJS = build/profiles.o build/paramprof.o build/bheap.o build/idr.o build/alignio.o build/trimming.o build/xcorr.o build/iofile.o build/paramclust.o build/cluster.o build/hierarchical.o build/itvltree.o build/dtw.o build/profilemap.o build/annotate.o
-TESTOBJS = build/tcparamprof.o
+TESTOBJS = build/tcparamprof.o build/tcdtw.o
 
 all : srnap
 
@@ -19,7 +19,7 @@ srnap.o : setup
 utest: profiles.o annotate.o utest.o
 	gcc -o bin/utest -L/home/apages/tools/lcut-0.3.0/lib/ -Llib/ $(OBJS) $(TESTOBJS) build/utest.o -llcut -lgsl -lgslcblas -lm -lz -lpthread -lbam
 
-utest.o: tcparamprof.o
+utest.o: tcparamprof.o tcdtw.o
 	$(CC) $(CFLAGS) test/src/utest/utest.c -Isrc/include/ -Itest/src/utest/include -I/home/apages/tools/lcut-0.3.0/include/ -o build/utest.o
 
 
@@ -75,6 +75,9 @@ alignio.o : setup
 
 tcparamprof.o : setup
 	$(CC) $(CFLAGS) test/src/utest/tcparamprof.c -Isrc/include -Itest/src/utest/include -I/home/apages/tools/lcut-0.3.0/include/ -o build/tcparamprof.o
+
+tcdtw.o : setup
+	$(CC) $(CFLAGS) test/src/utest/tcdtw.c -Isrc/include -Itest/src/utest/include -I/home/apages/tools/lcut-0.3.0/include/ -o build/tcdtw.o
 
 # Prepare build environment
 
