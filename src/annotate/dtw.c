@@ -92,14 +92,14 @@ double xdtw(profile_struct_annotation* p1, profile_struct_annotation* p2) {
 
   // First row and column
   for (i = 1; i < n; i++) {
-    double noise = 0;//p2->noise[rand() % MAX_PROFILE_LENGTH];
+    double noise = p2->noise[rand() % MAX_PROFILE_LENGTH];
     warping[i][0][0] = s[i] * noise + warping[i - 1][0][0];
     warping[i][0][1] = s[i] * s[i] + warping[i - 1][0][1];
     warping[i][0][2] = noise * noise + warping[i - 1][0][2];
   }
 
   for (j = 1; j < m; j++) {
-    double noise = 0;//p1->noise[rand() % MAX_PROFILE_LENGTH];
+    double noise = p1->noise[rand() % MAX_PROFILE_LENGTH];
     warping[0][j][0] = noise * q[j] + warping[0][j - 1][0];
     warping[0][j][1] = noise * noise + warping[0][j - 1][1];
     warping[0][j][2] = q[j] * q[j] + warping[0][j - 1][2];
@@ -116,8 +116,8 @@ double xdtw(profile_struct_annotation* p1, profile_struct_annotation* p2) {
 
     for(j = start; j <= stop; j++) {
       double c1, c2, c3;
-      double noise1 = 0;//p1->noise[rand() % MAX_PROFILE_LENGTH];
-      double noise2 = 0;//p2->noise[rand() % MAX_PROFILE_LENGTH];
+      double noise1 = p1->noise[rand() % MAX_PROFILE_LENGTH];
+      double noise2 = p2->noise[rand() % MAX_PROFILE_LENGTH];
 
       c2 = (s[i] * q[j] + warping[i - 1][j - 1][0]) / sqrt((s[i]*s[i] + warping[i - 1][j - 1][1]) * (q[j]*q[j] + warping[i - 1][j - 1][2]));
       
