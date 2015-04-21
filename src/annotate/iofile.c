@@ -272,30 +272,44 @@ int next_feature(FILE* bedf, feature_struct* feature)
 
   read = getline(&line, &len, bedf);
 
-  if (read < 0)
+  if (read < 0) {
+    free(line);
     return(0);
+  }
 
-  if ((token = strtok(line, "\t")) == NULL) 
+  if ((token = strtok(line, "\t")) == NULL) {
+    free(line);
     return(-1);
+  }
   strncpy(feature->chromosome, token, MAX_FEATURE);
 
-  if ((token = strtok(NULL, "\t")) == NULL)
+  if ((token = strtok(NULL, "\t")) == NULL) {
+    free(line);
     return(-1);
+  }
   feature->start = atoi(token);
 
-  if ((token = strtok(NULL, "\t")) == NULL)
+  if ((token = strtok(NULL, "\t")) == NULL) {
+    free(line);
     return(-1);
+  }
   feature->end = atoi(token);
 
-  if ((token = strtok(NULL, "\t")) == NULL)
+  if ((token = strtok(NULL, "\t")) == NULL) {
+    free(line);
     return(-1);
+  }
   strncpy(feature->name, token, MAX_FEATURE);
 
-  if ((token = strtok(NULL, "\t")) == NULL)
+  if ((token = strtok(NULL, "\t")) == NULL) {
+    free(line);
     return(-1);
+  }
 
-  if ((token = strtok(NULL, "\t")) == NULL)
+  if ((token = strtok(NULL, "\t")) == NULL) {
+    free(line);
     return(-1);
+  }
 
   // Check if bed file is BED6 format and remove end of line character
   index = token;
@@ -304,6 +318,8 @@ int next_feature(FILE* bedf, feature_struct* feature)
 
   if (strcmp(token, "+") == 0) feature->strand = FWD_STRAND;
   else feature->strand = REV_STRAND;
+
+  free(line);
 
   return(1);
 }
