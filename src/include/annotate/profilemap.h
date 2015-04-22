@@ -48,6 +48,8 @@ void map_add_profile(map_struct* map, profile_struct_annotation* profile);
  * map_annotate
  *   Annotates a profile in the map
  *
+ * @args args_a_struct* arguments
+ *   Pointer to a struct handling the command line parameters
  * @args map_struct* map
  *   Pointer to a profile map
  * @args char* chromosome
@@ -59,7 +61,7 @@ void map_add_profile(map_struct* map, profile_struct_annotation* profile);
  * @args int strand
  *   Genomic strand of the feature
  */
-void map_annotate(map_struct* map, char* chrom, int start, int end, int strand, char* feature);
+void map_annotate(args_a_struct* arguments, map_struct* map, char* chrom, int start, int end, int strand, char* feature);
 
 /*
  * map_destroy

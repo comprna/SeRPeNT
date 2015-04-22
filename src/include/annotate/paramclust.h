@@ -61,3 +61,18 @@ int parse_additional_profiles_parameters(char* option, char** error_message, arg
  * @return -1 if an error occurred. 0 otherwise.
  */
 int parse_threshold_parameters(char* option, char** error_message, args_a_struct* arguments);
+
+/*
+ * parse_overlapping_parameters
+ *   Parses the string defining the overlapping parameters
+ *
+ * @arg char* option
+ *   String defining the replicates treatment options
+ * @arg char** error_message
+ *   Pointer to a char array where to store the error message
+ * @args args_a_struct* arguments
+ *   Pointer to the argument handler
+ *
+ * @return -1 if an error occurred. 0 otherwise.
+ */
+int parse_overlapping_parameters(char* option, char** error_message, args_a_struct* arguments);

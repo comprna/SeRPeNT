@@ -24,10 +24,48 @@ int height(itnode_struct* root)
 /*
  * do_overlap
  *   A utility function to check if given two intervals overlap
+ *   
+ *   @args int low_a
+ *     Start position of the profile
+ *   @args int high_a
+ *     End position of the profile
+ *   @args int low_b
+ *     Start position of the feature
+ *   @args int high_b
+ *     End position of the feature
+ *   @double overlap_a
+ *     Percentage of the profile that is covered by the feature
+ *   @double overlap_b
+ *     Percentage of the feature that is covered by the profile
  */
-int do_overlap(int low_a, int high_a, int low_b, int high_b)
+int do_overlap(int low_a, int high_a, int low_b, int high_b, double overlap_a, double overlap_b)
 {
-  if (low_a <= high_b && low_b <= high_a) return 1;
+  int length_a = high_a - low_a + 1;
+  int length_b = high_b - low_b + 1;
+
+  if (low_a <= high_b && low_b <= high_a) {
+    int ok_a = 0, ok_b = 0;
+
+    if ((low_a <= low_b) && (high_a <= high_b)) {
+      ok_a = (((double) (length_a - (low_b - low_a))) / ((double) length_a)) >= overlap_a ? 1:0;
+      ok_b = (((double) (length_b - (high_b - high_a))) / ((double) length_b)) >= overlap_b ? 1:0;
+    }
+    else if ((low_a <= low_b) && (high_a > high_b)) {
+      ok_a = (((double) (length_a - (low_b - low_a) - (high_a - high_b))) / ((double) length_a)) >= overlap_a ? 1:0;
+      ok_b = 1;
+    }
+    else if ((low_a > low_b) && (high_a <= high_b)) {
+      ok_a = 1;
+      ok_b = (((double) (length_b - (high_b - high_a) - (low_a - low_b))) / ((double) length_b)) >= overlap_b ? 1:0;
+    }
+    else { // low_a > low_b and high_a > high_b
+      ok_a = (((double) (length_a - (high_a - high_b))) / ((double) length_a)) >= overlap_a ? 1:0;
+      ok_b = (((double) (length_b - (low_a - low_b))) / ((double) length_b)) >= overlap_b ? 1:0;
+    }
+
+    if (ok_a && ok_b)
+      return 1;
+  }
   return 0;
 }
 
@@ -158,7 +196,7 @@ itnode_struct* insert_itnode(itnode_struct* node, int low, int high, profile_str
  * 
  * @see include/annotate/itvltree.h
  */
-void search_itnode(itnode_struct* root, int low, int high, char* annotation)
+void search_itnode(itnode_struct* root, int low, int high, char* annotation, double overlap_a, double overlap_b)
 {
   // Base Case, tree is empty
   if (root == NULL)
@@ -166,7 +204,7 @@ void search_itnode(itnode_struct* root, int low, int high, char* annotation)
 
   // If given interval overlaps with root
   // Check annotation score in order to overwrite annotation
-  if (do_overlap(root->low, root->high, low, high)) {
+  if (do_overlap(root->low, root->high, low, high, overlap_a, overlap_b)) {
     int score;
 
     if ((root->low > low) && (root->high < high))
@@ -188,11 +226,11 @@ void search_itnode(itnode_struct* root, int low, int high, char* annotation)
   // greater than or equal to given interval, then i may
   // overlap with an interval is left subtree
   if (low < root->low)
-    search_itnode(root->left, low, high, annotation);
+    search_itnode(root->left, low, high, annotation, overlap_a, overlap_b);
 
   // Else interval can only overlap with right subtree
   if (high > root->high)
-    search_itnode(root->right, low, high, annotation);
+    search_itnode(root->right, low, high, annotation, overlap_a, overlap_b);
 }
 
 /*

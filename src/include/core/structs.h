@@ -37,6 +37,8 @@ typedef struct {
   int additional_profiles;
   char additional_profiles_f_path[MAX_PATH];
   double cluster_cutoff;
+  double overlap_ftop;
+  double overlap_ptof;
 } args_a_struct;
 
 /*

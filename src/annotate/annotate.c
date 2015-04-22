@@ -24,6 +24,8 @@ int annotate_sc(int argc,  char **argv)
   arguments.annotation = ANNOTATION_CONDITION;
   arguments.additional_profiles = ADDITIONAL_P_CONDITION;
   arguments.cluster_cutoff = CLUSTER_CUTOFF;
+  arguments.overlap_ftop = OVERLAP_FTOP;
+  arguments.overlap_ptof = OVERLAP_PTOF;
   if (parse_command_line_c(argc, argv, &error_message, &arguments) < 0) {
     fprintf(stderr, "%s\n", error_message);
     if ((strcmp(error_message, ANNOTATE_HELP_MSG) == 0) || (strcmp(error_message, VERSION_MSG) == 0))
@@ -147,7 +149,7 @@ int annotate_sc(int argc,  char **argv)
         return(1);
       }
       while((result = next_feature(annotation_i_file, &feature) > 0))
-        map_annotate(&map, feature.chromosome, feature.start, feature.end, feature.strand, feature.name);
+        map_annotate(&arguments, &map, feature.chromosome, feature.start, feature.end, feature.strand, feature.name);
       if (result < 0) {
         fprintf(stderr, "%s - %s\n", ERR_ANNOTATION_F_NOT_READABLE, arguments.annotation_f_path[i]);
         return(1);

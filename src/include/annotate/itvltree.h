@@ -33,7 +33,7 @@ itnode_struct* insert_itnode(itnode_struct* node, int low, int high, profile_str
  *   The index of the profile that overlaps with the interval.
  *   -1 if no profiles overlaps with the interval.
  */
-void search_itnode(itnode_struct* root, int low, int high, char* annotation);
+void search_itnode(itnode_struct* root, int low, int high, char* annotation, double overlap_a, double overlap_b);
 
 
 /*

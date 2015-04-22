@@ -115,6 +115,19 @@
 #define ERR_INVALID_c_VALUE "Invalid argument for option -c"
 
 /*
+ * ERROR : Invalid argument for -o option
+ */
+#define ERR_INVALID_o_VALUE "Invalid argument for option -o"
+/*
+ * ERROR : Invalid overlapping feature to profile value
+ */
+#define ERR_INVALID_ovpftop_VALUE "Feature coverage <feature_coverage> must be a number between 0 and 1"
+/*
+ * ERROR : Invalid overlapping profile to feature value
+ */
+#define ERR_INVALID_ovpptof_VALUE "Profile coverage <profile_coverage> must be a number between 0 and 1"
+
+/*
  * ERROR : BED Format
  */
 #define ERR_BED "BED format file:\n\

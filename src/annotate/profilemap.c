@@ -136,14 +136,14 @@ void map_add_profile(map_struct* map, profile_struct_annotation* profile)
  *
  * @see include/annotate/profilemap.h
  */
-void map_annotate(map_struct* map, char* chrom, int start, int end, int strand, char* feature)
+void map_annotate(args_a_struct* arguments, map_struct* map, char* chrom, int start, int end, int strand, char* feature)
 {
   int position;
 
   if ((position = map_search(map, chrom, strand)) < 0)
     return;
 
-  search_itnode(map->elements[position].root, start, end, feature);
+  search_itnode(map->elements[position].root, start, end, feature, arguments->overlap_ftop, arguments->overlap_ptof);
 }
 
 /*

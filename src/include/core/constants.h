@@ -208,6 +208,16 @@
 #define ADDITIONAL_P_CONDITION 0
 
 /*
+ * Default value for the feature to profile overlap percentage
+ */
+#define OVERLAP_FTOP 0.9
+
+/*
+ * Default value for the profile to feature overlap percentage
+ */
+#define OVERLAP_PTOF 0.5
+
+/*
  * Maximum number of annotation files
  */
 #define MAX_ANNOTATIONS 10
