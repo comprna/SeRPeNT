@@ -176,8 +176,8 @@ int annotate_sc(int argc,  char **argv)
       double corr = xdtw(&profiles[i], &profiles[j]);//nxcorr(&profiles[i], &profiles[j]);
       if (corr < 0)
         corr = 0;
-      xcorr[i][j] = corr;
-      xcorr[j][i] = corr;
+      xcorr[i][j] = 1 - corr;
+      xcorr[j][i] = 1 - corr;
     }
   }
 
