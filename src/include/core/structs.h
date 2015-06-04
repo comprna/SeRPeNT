@@ -55,6 +55,8 @@ typedef struct {
   int32_t valid;
   int32_t free;
   double idr_score;
+  int tstart;
+  int tend;
 } profile_struct;
 
 typedef struct {
@@ -179,6 +181,7 @@ typedef struct {
   double distance;
   int lleafs;
   int rleafs;
+  int visited;
 } hcnode_struct;
 
 /*

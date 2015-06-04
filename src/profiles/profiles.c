@@ -123,8 +123,6 @@ int profiles_sc(int argc, char **argv)
   int curr_len;                                        // Current length
   int ncontigs;                                        // Number of contigs
   int** reads_per_contig;                              // Data matrix containing number of reads per contig and replicate
-  double** five_prime;                                 // Data matrix containing number of reads per nucleotide and contig in 5'-end
-  double** three_prime;                                // Data matrix containing number of reads per nucleotide and contig in 3'-end
   profile_struct profile;                              // Profile struct
 
   // Initialize options with default values
@@ -386,15 +384,8 @@ int profiles_sc(int argc, char **argv)
   fclose(tmprofiles_file);
   
   // Allocate memory for storing irreproducibility data
-  // Allocate memory for storing trimming data
   reads_per_contig = (int**) malloc(ncontigs * sizeof(int*));
   for (i = 0; i < ncontigs; i++) reads_per_contig[i] = (int*) malloc(arguments.number_replicates * sizeof(int));
-  five_prime = (double**) malloc(arguments.max_len * sizeof(double*));
-  three_prime = (double**) malloc(arguments.max_len * sizeof(double*));
-  for (i = 0; i < arguments.max_len; i++) {
-    five_prime[i] = malloc(ncontigs * sizeof(double));
-    three_prime[i] = malloc(ncontigs * sizeof(double));
-  }
   
   // Read profiles and store irreproducibility and trimming data
   tmprofiles_file = fopen(tmprofiles_file_name, "r");
@@ -406,19 +397,6 @@ int profiles_sc(int argc, char **argv)
   while((result = next_tmprofile(tmprofiles_file, &profile) > 0)) {
     for (i = 0; i < arguments.number_replicates; i++)
       reads_per_contig[index][i] = profile.nreads[i];
-
-    if (profile.valid) {
-      for (i = 0; i < MIN(arguments.max_len, profile.length); i++) {
-        five_prime[i][index] = profile.profile[i];
-        three_prime[i][index] = profile.profile[MIN(arguments.max_len, profile.length) - i - 1];
-      }
-      while(i < arguments.max_len) {
-        five_prime[i][index] = 0;
-        three_prime[i][index] = 0;
-        i++;
-      }
-    }
-
     free(profile.nreads);
     if (profile.free) free(profile.profile);
     index++;
@@ -466,12 +444,12 @@ int profiles_sc(int argc, char **argv)
 
     // Trim
     if (profile.valid)
-      trim(&profile, &arguments, five_prime, three_prime);
+      trim(&profile, &arguments);
 
     // Print profile
     if (profile.valid) {
       fprintf(profiles_file, "%s:%d-%d:%s", profile.chromosome, profile.start, profile.end, STR(profile.strand));
-      for (i = 0; i < profile.length; i++)
+      for (i = profile.tstart; i <= profile.tend; i++)
         fprintf(profiles_file, "\t%f", profile.profile[i]);
       fprintf(profiles_file, "\n");
     }
@@ -500,12 +478,6 @@ int profiles_sc(int argc, char **argv)
   for (i = 0; i < index; i++)
     free(reads_per_contig[i]);
   free(reads_per_contig);
-  for (i = 0; i < arguments.max_len; i++) {
-    free(five_prime[i]);
-    free(three_prime[i]);
-  }
-  free(five_prime);
-  free(three_prime);
 
   return(0);
 }

@@ -2,4 +2,4 @@
 
 /*
 */
-void trim(profile_struct* profile, args_p_struct* arguments, double** fp, double** tp);
+void trim(profile_struct* profile, args_p_struct* arguments);
