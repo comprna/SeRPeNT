@@ -191,4 +191,21 @@ typedef struct {
   int hc_index;
   double distance;
 } dvnode_struct;
+
+/*
+ * Struct for fast SERE IDR calculation
+ */
+typedef struct {
+  long* reads_per_replicate;
+  long total_reads;
+} sere_struct;
+
+/*
+ * Struct for fast SERE IDR calculation
+ */
+typedef struct {
+  struct llist_struct** elems;
+  long* result;
+  long nelems;
+} npidr_struct;
 #endif

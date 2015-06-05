@@ -124,6 +124,8 @@ int profiles_sc(int argc, char **argv)
   int ncontigs;                                        // Number of contigs
   int** reads_per_contig;                              // Data matrix containing number of reads per contig and replicate
   profile_struct profile;                              // Profile struct
+  sere_struct* sere_s;                                 // SERE fast calculation struct pointer
+  npidr_struct* npidr_s;                               // npIDR fast calculation struct pointer
 
   // Initialize options with default values
   arguments.number_replicates = MAX_REPLICATES;
@@ -422,17 +424,21 @@ int profiles_sc(int argc, char **argv)
     return (1);
   }
 
+  // Generate data structures for ID
+  sere_s = create_sere(reads_per_contig, ncontigs, arguments.number_replicates);
+  npidr_s = create_npidr(reads_per_contig, ncontigs, arguments.number_replicates);
+
   // Read profiles and print results
   index = 0;
   while((result = next_tmprofile(tmprofiles_file, &profile) > 0)) {
 
     // Calculate irreproducibility scores
     if (arguments.idr_method == IDR_SERE) 
-      calculate_sere_score(&profile, reads_per_contig, ncontigs, arguments.number_replicates, arguments.idr_cutoff);
+      calculate_sere_score(&profile, sere_s, arguments.number_replicates, arguments.idr_cutoff);
     else if (arguments.idr_method == IDR_COMMON)
       calculate_common_score(&profile, arguments.number_replicates);
     else if (arguments.idr_method == IDR_IDR)
-      calculate_npidr_score(&profile, reads_per_contig, index, ncontigs, arguments.number_replicates, arguments.idr_cutoff);
+      calculate_npidr_score(&profile, npidr_s, index, ncontigs, arguments.number_replicates, arguments.idr_cutoff);
     else
       profile.idr_score = 0;
 
@@ -460,6 +466,10 @@ int profiles_sc(int argc, char **argv)
 
     index++;
   }
+
+  // Destroy data structures for ID
+  destroy_sere(sere_s);
+  destroy_npidr(npidr_s);
 
   // Close file descriptors
   fclose(tmprofiles_file);
