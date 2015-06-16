@@ -25,13 +25,13 @@ int compare_double (const void *a, const void *b)
 
 /*
  * deepcpy
- *  Function to copy values from one alignment_struct to another
+ *  Function to copy values from one alignment handler struct to another
  *
  * @arg alignment_struct* destiny
- *   Pointer to the alignment_struct that is updated
+ *   Pointer to the alignment handler struct that is updated
  *
  * @arg alignment_struct* source
- *   Pointer to the alignment_struct that will be copied
+ *   Pointer to the alignment handler struct that will be copied
  */
 void deepcpy(alignment_struct* destiny, alignment_struct* source)
 {
@@ -491,4 +491,3 @@ int profiles_sc(int argc, char **argv)
 
   return(0);
 }
-/* END OF FILE */

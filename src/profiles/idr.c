@@ -158,7 +158,7 @@ void calculate_common_score(profile_struct* profile, int n_replicates)
 
 
 /*
- * create_sere
+ * create_npidr_
  *
  * @see include/profiles/idr.h
  */

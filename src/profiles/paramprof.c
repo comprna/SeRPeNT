@@ -260,7 +260,7 @@ int parse_profiles_parameters(char* option, char** error_message, args_p_struct*
 /*
  * parse_trimming_parameters
  *
- * @see include/profiles/parse_trimming_parameters
+ * @see include/profiles/paramprof.h
  */
 int parse_trimming_parameters(char* option, char** error_message, args_p_struct* arguments)
 {

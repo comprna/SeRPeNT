@@ -5,7 +5,9 @@
  *   Initialize heap
  *
  * @arg heap_struct* bh
- *   A pointer to the heap data structure
+ *   A pointer to the heap struct
+ * @arg int size
+ *   The expected size of the heap
  */
 void initbh(heap_struct* bh, int size);
 
@@ -14,7 +16,7 @@ void initbh(heap_struct* bh, int size);
  *   Free and destroy heap
  *
  * @arg heap_struct* bh
- *   A pointer to the heap data structure
+ *   A pointer to the heap struct
  */
 void destroybh(heap_struct* bh);
 
@@ -23,8 +25,7 @@ void destroybh(heap_struct* bh);
  *   Insert an element into the heap
  *
  * @arg heap_struct* bh
- *   A pointer to the heap data structure
- *
+ *   A pointer to the heap struct
  * @arg int element
  *   New element inserted in the heap
  */
@@ -35,7 +36,7 @@ void insertbh(heap_struct* bh, alignment_struct* element);
  *   Delete and return the top priority element in the heap
  *
  * @arg heap_struct* bh
- *   A pointer to the heap data structure
+ *   A pointer to the heap struct
  *
  * @return
  *   The top priority element in the heap
