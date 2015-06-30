@@ -39,6 +39,8 @@ typedef struct {
   double cluster_cutoff;
   double overlap_ftop;
   double overlap_ptof;
+  int correlations;
+  char correlations_f_path[MAX_PATH];
 } args_a_struct;
 
 /*

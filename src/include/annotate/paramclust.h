@@ -76,3 +76,10 @@ int parse_threshold_parameters(char* option, char** error_message, args_a_struct
  * @return -1 if an error occurred. 0 otherwise.
  */
 int parse_overlapping_parameters(char* option, char** error_message, args_a_struct* arguments);
+
+/*
+ * parse_xcorr_parameters
+ *   Parses the string defining the correlations file option
+ *
+ */
+int parse_xcorr_parameters(char* option, char** error_message, args_a_struct* arguments);

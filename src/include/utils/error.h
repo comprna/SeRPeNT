@@ -172,5 +172,9 @@
  * ERROR : Cannot read annotation file
  */
 #define ERR_ANNOTATION_F_NOT_READABLE "Annotation file does not exist or is not readable"
+/*
+ * ERROR : Cannot read correlations file
+ */
+#define ERR_CORRELATIONS_F_NOT_READABLE "Correlations file does not exist or is not readable"
 
 #endif

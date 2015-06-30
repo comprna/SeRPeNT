@@ -85,109 +85,113 @@ void print_tree(FILE* fp, hcnode_struct* hc, int index, profile_struct_annotatio
  * annotate_tree_r
  *   Recursive function for annotate_tree
  */
-void annotate_tree_r(hcnode_struct* hc, int root, int start, int end, profile_struct_annotation* profiles, double** contributions, int* leafs, char** labels)
+void annotate_tree_r(hcnode_struct* hc, int root, int start, int end, profile_struct_annotation* profiles, int* leafs)
 {
-  int i, j;
-
-  // Fill matrix
-  for (i = start; i < (end - 1); i++) {
-    for (j = (i + 1); j < end; j++) {
-      contributions[i][j] = (1 - hc[root].distance);
-      contributions[j][i] = (1 - hc[root].distance);
-    }
-  }
+  // Mark node as visited
+  hc[root].visited = 1;
 
   // Left leaf
-  if (root[hc].left >= 0) {
+  if (root[hc].left >= 0)
     leafs[start] = hc[root].left;
-    i = 0;
-    while((strcmp(labels[i], "NULLPOINTER") != 0) && (strcmp(labels[i], profiles[leafs[start]].annotation) != 0)) i++;
-    if (strcmp(labels[i], "NULLPOINTER") == 0) strncpy(labels[i], profiles[leafs[start]].annotation, MAX_FEATURE);
-  }
   else
-    annotate_tree_r(hc, hc[root].left * (-1) - 1, start, start + hc[root].lleafs, profiles, contributions, leafs, labels);
+    annotate_tree_r(hc, hc[root].left * (-1) - 1, start, start + hc[root].lleafs, profiles, leafs);
 
   // Right leaf
-  if (root[hc].right >= 0) {
+  if (root[hc].right >= 0)
     leafs[end - 1] = hc[root].right;
-    i = 0;
-    while((strcmp(labels[i], "NULLPOINTER") != 0) && (strcmp(labels[i], profiles[leafs[end - 1]].annotation) != 0)) i++;
-    if (strcmp(labels[i], "NULLPOINTER") == 0) strncpy(labels[i], profiles[leafs[end - 1]].annotation, MAX_FEATURE);
-  }
   else
-    annotate_tree_r(hc, hc[root].right * (-1) - 1, end - hc[root].rleafs, end, profiles, contributions, leafs, labels);
+    annotate_tree_r(hc, hc[root].right * (-1) - 1, end - hc[root].rleafs, end, profiles, leafs);
 }
 
 /*
  * annotate_tree
  *   Auxiliar function for hc_annotate
  */
-void annotate_tree(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, int root)
+void annotate_tree(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, double** correlations, int root, int* cluster)
 {
-  double** contributions;
   int* leafs;
-  char** labels;
-  int i, j, nleafs;
-  double max_score;
-  char current_annotation[MAX_FEATURE];
-
+  int nleafs, i, j, add;
+  dvnode_struct** dv;
+  
   // Initialize 
   nleafs = hc[root].lleafs + hc[root].rleafs;
   leafs = (int*) malloc(sizeof(int) * nleafs);
-  labels = (char**) malloc(sizeof(char*) * nleafs);
-  contributions = (double**) malloc(sizeof(double*) * nleafs);
-  for (i = 0; i < nleafs; i++) {
-    contributions[i] = (double*) malloc(sizeof(double) * nleafs);
-    contributions[i][i] = 0;
-    labels[i] = (char*) malloc(sizeof(char) * MAX_FEATURE);
-    strncpy(labels[i], "NULLPOINTER", MAX_FEATURE);
-  }
+  dv = (dvnode_struct**) malloc(sizeof(dvnode_struct*) * (nleafs - 1));
+  add = 0;
 
-  // Calculate contributions
-  annotate_tree_r(hc, root, 0, nleafs, profiles, contributions, leafs, labels);
+  // Find clustered profiles
+  annotate_tree_r(hc, root, 0, nleafs, profiles, leafs);
 
-  // Annotate profiles
+  // For each unknown leaf, sort remaining leafs by distance
   for (i = 0; i < nleafs; i++) {
-    if (profiles[leafs[i]].annotation == NULL || strcmp(profiles[leafs[i]].annotation, "\0") == 0) {
-      strncpy(current_annotation, labels[0], MAX_FEATURE);
-      max_score = 0;
+    int idx = 0;
+
+    if (strcmp(profiles[leafs[i]].annotation, "unknown") == 0) {
       for (j = 0; j < nleafs; j++) {
-        if (j != i && strcmp(profiles[leafs[j]].annotation, labels[0]) == 0)
-          max_score += contributions[i][j];
-      }
-      max_score = max_score / (nleafs - 1);
-
-      int z = 1;
-      while(z < nleafs && strcmp(labels[z], "NULLPOINTER") != 0) {
-        double score = 0;
-        for (j = 0; j < nleafs; j++) {
-          if (j != i && strcmp(profiles[leafs[j]].annotation, labels[z]) == 0)
-            score += contributions[i][j];
+        if (j != i) {
+          dv[idx] = (dvnode_struct*) malloc(sizeof(dvnode_struct));
+          dv[idx]->hc_index = leafs[j];
+          dv[idx]->distance = correlations[leafs[i]][leafs[j]];
+          idx++;
         }
-        score = score / (nleafs - 1);
-        if (score > max_score) {
-          strncpy(current_annotation, labels[z], MAX_FEATURE);
-          max_score = score;
+      }
+      qsort(dv, nleafs - 1, sizeof(dvnode_struct*), compare_dvnode);
+
+      // Assign labels if only 3 leafs
+      if ((nleafs - 1) < 3) {
+        if (strcmp(profiles[dv[0]->hc_index].annotation, "unknown") == 0) {
+          sprintf(profiles[leafs[i]].tmp_annotation, "cluster_%d", *cluster);
+          add++;
         }
-        z++;
+        else
+          strncpy(profiles[leafs[i]].tmp_annotation, profiles[dv[0]->hc_index].annotation, MAX_FEATURE);
+        profiles[leafs[i]].anscore = correlations[leafs[i]][dv[0]->hc_index];
       }
 
-      if (max_score > profiles[leafs[i]].anscore) {
-        profiles[leafs[i]].anscore = max_score;
-        strncpy(profiles[leafs[i]].tmp_annotation, current_annotation, MAX_FEATURE);
-        profiles[leafs[i]].cluster = root;
+      // Assign labels if 3 leafs or more
+      else {
+        if ((strcmp(profiles[dv[0]->hc_index].annotation, profiles[dv[1]->hc_index].annotation) == 0) ||
+            (strcmp(profiles[dv[0]->hc_index].annotation, profiles[dv[2]->hc_index].annotation) == 0)) {
+          if (strcmp(profiles[dv[0]->hc_index].annotation, "unknown") == 0) {
+            sprintf(profiles[leafs[i]].tmp_annotation, "cluster_%d", *cluster);
+            add++;
+          }
+          else
+            strncpy(profiles[leafs[i]].tmp_annotation, profiles[dv[0]->hc_index].annotation, MAX_FEATURE);
+          profiles[leafs[i]].anscore = correlations[leafs[i]][dv[0]->hc_index];
+        }
+        else if (strcmp(profiles[dv[1]->hc_index].annotation, profiles[dv[2]->hc_index].annotation) == 0) {
+          if (strcmp(profiles[dv[1]->hc_index].annotation, "unknown") == 0) {
+            sprintf(profiles[leafs[i]].tmp_annotation, "cluster_%d", *cluster);
+            add++;
+          }
+          else
+            strncpy(profiles[leafs[i]].tmp_annotation, profiles[dv[1]->hc_index].annotation, MAX_FEATURE);
+          profiles[leafs[i]].anscore = correlations[leafs[i]][dv[1]->hc_index];
+        }
+        else {
+          if (strcmp(profiles[dv[0]->hc_index].annotation, "unknown") == 0) {
+            sprintf(profiles[leafs[i]].tmp_annotation, "cluster_%d", *cluster);
+            add++;
+          }
+          else
+            strncpy(profiles[leafs[i]].tmp_annotation, profiles[dv[0]->hc_index].annotation, MAX_FEATURE);
+          profiles[leafs[i]].anscore = correlations[leafs[i]][dv[0]->hc_index];
+        }
       }
+
+      for (j = 0; j < (nleafs - 1); j++) free(dv[j]);
     }
+
+    profiles[leafs[i]].cluster = *cluster;
   }
+
+  // Increment cluster pointer
+  if (add) (*cluster)++;
 
   // Free structures
-  for(i = 0; i < nleafs; i++) {
-    free(contributions[i]);
-    free(labels[i]);
-  }
   free(leafs);
-  free(labels);
-  free(contributions);
+  free(dv);
 }
 
 /*
@@ -212,6 +216,7 @@ hcnode_struct* hc_cluster(double** correlation, int nprofiles)
     hc[i].parent = nprofiles * (-1);
     hc[i].lleafs = 0;
     hc[i].rleafs = 0;
+    hc[i].visited = 0;
   }
   free(tree);
 
@@ -237,39 +242,36 @@ void hc_print(FILE* fp, hcnode_struct* hc, int nprofiles, profile_struct_annotat
  *
  * @see include/annotate/hierarchical.h
  */
-void hc_annotate(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, double cutoff)
+void hc_annotate(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, double** correlations, double cutoff)
 {
-  int i;
-  dvnode_struct** distances;
-
-  // Load all distances in the hierarchical tree and sort them ascendently
-  distances = (dvnode_struct**) malloc(sizeof(dvnode_struct*) * (nprofiles - 1));
-  for (i = 0; i < (nprofiles - 1); i++) {
-    distances[i] = (dvnode_struct*) malloc(sizeof(dvnode_struct));
-    distances[i]->distance = hc[i].distance;
-    distances[i]->hc_index = i;
-  }
-  qsort(distances, nprofiles - 1, sizeof(dvnode_struct*), compare_dvnode);
+  int i, cluster;
 
   // Annotate each node in the tree ascendently by distance
+  cluster = 1;
   for (i = 0; i < (nprofiles - 1); i++) {
-    int node = distances[i]->hc_index;
-    annotate_tree(hc, nprofiles, profiles, node);
+    if (!hc[i].visited) {
+      int root = i;
+      int parent = hc[root].parent * (-1) - 1;
+      while ((root < (nprofiles - 2)) && (hc[root].distance <= cutoff) && (hc[parent].distance <= cutoff)) {
+        root = parent;
+        parent = hc[root].parent * (-1) - 1;
+      }
+      if (hc[root].distance <= cutoff)
+        annotate_tree(hc, nprofiles, profiles, correlations, root, &cluster);
+    }
   }
 
   // Assign labels
   for (i = 0; i < nprofiles; i++) {
-    if (profiles[i].annotation == NULL || strcmp(profiles[i].annotation, "\0") == 0) {
-      if (strcmp(profiles[i].tmp_annotation, "\0") == 0)
-        sprintf(profiles[i].annotation, "cluster_%d", profiles[i].cluster);
-      else if (profiles[i].anscore >= cutoff)
-        strncpy(profiles[i].annotation, profiles[i].tmp_annotation, MAX_FEATURE);
-      else
-        sprintf(profiles[i].annotation, "cluster_%d", profiles[i].cluster);
-    }
-  }
+    if (profiles[i].cluster < 0)
+      profiles[i].cluster = cluster;
 
-  // Free distances
-  for (i = 0; i < (nprofiles - 1); i++) free(distances[i]);
-  free(distances);
+    if ((strcmp(profiles[i].annotation, "unknown") == 0) &&
+        (strcmp(profiles[i].tmp_annotation, "unknown") == 0)) {
+      sprintf(profiles[i].annotation, "cluster_%d", cluster++);
+    }
+    else if ((strcmp(profiles[i].annotation, "unknown") == 0) &&
+             (strcmp(profiles[i].tmp_annotation, "unknown") != 0))
+      strncpy(profiles[i].annotation, profiles[i].tmp_annotation, MAX_FEATURE);
+  }
 }

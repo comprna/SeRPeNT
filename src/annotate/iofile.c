@@ -128,6 +128,7 @@ int next_profile(FILE* fp, profile_struct_annotation* profile)
   profile->additional = 0;
 
   profile->anscore = INT_MIN;
+  profile->cluster = -1;
 
   profile->profile = (double*) malloc((profile->end - profile->start + 1) * sizeof(double));
 
@@ -151,6 +152,8 @@ int next_profile(FILE* fp, profile_struct_annotation* profile)
   profile->mean = gsl_stats_mean(profile->profile, 1, profile->length);
   profile->variance = gsl_stats_variance(profile->profile, 1, profile->length);
   gnoise(profile->profile, profile->mean, profile->variance, profile->noise, MAX_PROFILE_LENGTH);
+  strncpy(profile->annotation, "unknown", MAX_FEATURE);
+  strncpy(profile->tmp_annotation, "unknown", MAX_FEATURE);
 
   free(cline);
   free(line);
@@ -228,6 +231,7 @@ int next_additional_profile(FILE* fp, profile_struct_annotation* profile, char* 
   strcpy(profile->species, species);
 
   profile->anscore = INT_MIN;
+  profile->cluster = -1;
 
   profile->profile = (double*) malloc((profile->end - profile->start + 1) * sizeof(double));
 
@@ -321,5 +325,44 @@ int next_feature(FILE* bedf, feature_struct* feature)
 
   free(line);
 
+  return(1);
+}
+
+/*
+ * next_correlation
+ * 
+ * @see include/annotation/iofile.h
+ */
+int next_correlation(FILE* xcorrf, double* score)
+{
+  char *line = NULL;
+  char *token;
+  size_t len = 0;
+  ssize_t read;
+
+  read = getline(&line, &len, xcorrf);
+
+  if (read < 0) {
+    free(line);
+    return(0);
+  }
+
+  if ((token = strtok(line, "\t")) == NULL) {
+    free(line);
+    return(-1);
+  }
+
+  if ((token = strtok(NULL, "\t")) == NULL) {
+    free(line);
+    return(-1);
+  }
+
+  if ((token = strtok(NULL, "\t")) == NULL) {
+    free(line);
+    return(-1);
+  }
+  *score = atof(token);
+
+  free(line);
   return(1);
 }

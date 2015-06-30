@@ -45,3 +45,14 @@ int next_additional_profile(FILE* fp, profile_struct_annotation* profile, char* 
  *   1 if more lines available. 0 if no more lines. -1 if file is ill-formatted.
  */
 int next_feature(FILE* bedf, feature_struct* feature);
+
+/*
+ * next_correlation
+ *   Reads a line of the correlations file and stores the contents in a given pointer
+ *
+ * @arg
+ *
+ * @return
+ *   1 if more lines available. 0 if no more lines (EOF). -1 if file is ill-formatted.
+ */
+int next_correlation(FILE* xcorrf, double* score);

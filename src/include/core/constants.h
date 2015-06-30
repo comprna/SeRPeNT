@@ -222,4 +222,9 @@
  */
 #define MAX_ANNOTATIONS 10
 
+/*
+ * Condition for existence of correlations file
+ */
+#define CORRELATIONS_CONDITION 0
+
 #endif

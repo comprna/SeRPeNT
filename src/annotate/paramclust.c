@@ -11,7 +11,7 @@ int parse_command_line_c(int argc, char** argv, char** error_message, args_a_str
   char carg;
   int terminate = 0;
 
-  while(((carg = getopt(argc, argv, "hva:x:c:o:")) != -1) && (terminate >= 0)) {
+  while(((carg = getopt(argc, argv, "hva:d:c:o:x:")) != -1) && (terminate >= 0)) {
     switch (carg) {
       case 'h':
         terminate--;
@@ -24,7 +24,7 @@ int parse_command_line_c(int argc, char** argv, char** error_message, args_a_str
       case 'a':
         terminate = parse_annotation_parameters(optarg, error_message, arguments);
         break;
-      case 'x':
+      case 'd':
         terminate = parse_additional_profiles_parameters(optarg, error_message, arguments);
         break;
       case 'c':
@@ -32,6 +32,9 @@ int parse_command_line_c(int argc, char** argv, char** error_message, args_a_str
         break;
       case 'o':
         terminate = parse_overlapping_parameters(optarg, error_message, arguments);
+        break;
+      case 'x':
+        terminate = parse_xcorr_parameters(optarg, error_message, arguments);
         break;
       case '?':
         terminate--;
@@ -154,6 +157,20 @@ int parse_overlapping_parameters(char* option, char** error_message, args_a_stru
     *error_message = ERR_INVALID_o_VALUE;
     return(-1);
   }
+
+  return(0);
+}
+
+
+/*
+ * parse_xcorr_parameters
+ *
+ * @see include/annotation/paramclust.h
+ */
+int parse_xcorr_parameters(char* option, char** error_message, args_a_struct* arguments)
+{
+  strncpy(arguments->correlations_f_path, option, MAX_PATH);
+  arguments->correlations = 1;
 
   return(0);
 }

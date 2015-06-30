@@ -9,11 +9,13 @@ int annotate_sc(int argc,  char **argv)
   args_a_struct arguments;                               // Struct for handling command line parameters
   FILE *profiles_file;                                   // Profiles file descriptor
   FILE *additional_profiles_file;                        // Annotation file descriptor and additional profiles file descriptor
+  FILE *correlations_file;                               // Correlations file descriptor
   FILE *xcorr_file, *clusters_file, *annotation_o_file;  // Output file descriptors
   int result;                                            // Result of any operation
   char* error_message;                                   // Error message to display in case of abnormal termination
   int nprofiles;                                         // Total number of profiles
   double** xcorr;                                        // 2-dimensional matrix containing correlations between profiles
+  double** xcorr_clone;                                  // Clone of xcorr above
   int i, j, index;                                       // Multi-purpose indexes
   profile_struct_annotation* profiles;                   // Array of profiles
   map_struct map;                                        // Profile map
@@ -26,6 +28,7 @@ int annotate_sc(int argc,  char **argv)
   arguments.cluster_cutoff = CLUSTER_CUTOFF;
   arguments.overlap_ftop = OVERLAP_FTOP;
   arguments.overlap_ptof = OVERLAP_PTOF;
+  arguments.correlations = CORRELATIONS_CONDITION;
   if (parse_command_line_c(argc, argv, &error_message, &arguments) < 0) {
     fprintf(stderr, "%s\n", error_message);
     if ((strcmp(error_message, ANNOTATE_HELP_MSG) == 0) || (strcmp(error_message, VERSION_MSG) == 0))
@@ -163,37 +166,72 @@ int annotate_sc(int argc,  char **argv)
 
   // Allocate memory for correlation
   xcorr = (double**) malloc(nprofiles * sizeof(double*));
+  xcorr_clone = (double**) malloc(nprofiles * sizeof(double*));
   for (i = 0; i < nprofiles; i++) {
     xcorr[i] = (double*) malloc(nprofiles * sizeof(double));
+    xcorr_clone[i] = (double*) malloc(nprofiles * sizeof(double));
     profiles[i].anscore = 0;
   }
 
-  // Calculate xcorrelations
-  fprintf(stderr, "[LOG] CALCULATING CROSS-CORRELATION SCORES AND DISTANCES\n");
-  for (i = 0; i < (nprofiles - 1); i++) {
-    xcorr[i][i] = (double) 0.0f;
-    for (j = i + 1; j < nprofiles; j++) {
-      double corr = xdtw(&profiles[i], &profiles[j]);//nxcorr(&profiles[i], &profiles[j]);
-      if (corr < 0)
-        corr = 0;
-      xcorr[i][j] = 1 - corr;
-      xcorr[j][i] = 1 - corr;
+  // Read correlations file and store
+  if (arguments.correlations) {
+    double score;
+
+    fprintf(stderr, "[LOG] LOADING CORRELATIONS\n");
+    correlations_file = fopen(arguments.correlations_f_path, "r");
+    if (!correlations_file) {
+      fprintf(stderr, "%s - %s\n", ERR_CORRELATIONS_F_NOT_READABLE, arguments.correlations_f_path);
+      return(1);
     }
+    i = 0; j = i + 1;
+    while((result = next_correlation(correlations_file, &score) > 0)) {
+      xcorr[i][j] = score; xcorr_clone[i][j] = score;
+      xcorr[j][i] = score; xcorr_clone[j][i] = score;
+      j++;
+      if (j == nprofiles) {
+        xcorr[i][i] = 0;
+        i++;
+        j = i + 1;
+      }
+    }
+    if (result < 0) {
+      fprintf(stderr, "%s - %s\n", ERR_CORRELATIONS_F_NOT_READABLE, arguments.correlations_f_path);
+      return(1);
+    }
+    fclose(correlations_file);
   }
 
-  // Print xcorrelations
-  for (i = 0; i < (nprofiles - 1); i++) {
-    for (j = i + 1; j < nprofiles; j++) {
-      if (profiles[i].strand == FWD_STRAND)
-        fprintf(xcorr_file, "%s:%d-%d:+\t", profiles[i].chromosome, profiles[i].start, profiles[i].end);
-      else
-        fprintf(xcorr_file, "%s:%d-%d:-\t", profiles[i].chromosome, profiles[i].start, profiles[i].end);
-      if (profiles[j].strand == FWD_STRAND)
-        fprintf(xcorr_file, "%s:%d-%d:+\t", profiles[j].chromosome, profiles[j].start, profiles[j].end);
-      else
-        fprintf(xcorr_file, "%s:%d-%d:-\t", profiles[j].chromosome, profiles[j].start, profiles[j].end);
-      fprintf(xcorr_file, "%f\t", xcorr[i][j]);
-      fprintf(xcorr_file, "%d\n", profiles[i].length - profiles[j].length);
+  // Calculate xcorrelations
+  else {
+    fprintf(stderr, "[LOG] CALCULATING CROSS-CORRELATION SCORES AND DISTANCES\n");
+    for (i = 0; i < (nprofiles - 1); i++) {
+      xcorr[i][i] = (double) 0.0f;
+      xcorr_clone[i][i] = (double) 0.0f;
+      for (j = i + 1; j < nprofiles; j++) {
+        double corr = xdtw(&profiles[i], &profiles[j]);//nxcorr(&profiles[i], &profiles[j]);
+        if (corr < 0)
+          corr = 0;
+        xcorr[i][j] = 1 - corr;
+        xcorr[j][i] = 1 - corr;
+        xcorr_clone[i][j] = 1 - corr;
+        xcorr_clone[j][i] = 1 - corr;
+      }
+    }
+
+    // Print xcorrelations
+    for (i = 0; i < (nprofiles - 1); i++) {
+      for (j = i + 1; j < nprofiles; j++) {
+        if (profiles[i].strand == FWD_STRAND)
+          fprintf(xcorr_file, "%s:%d-%d:+\t", profiles[i].chromosome, profiles[i].start, profiles[i].end);
+        else
+          fprintf(xcorr_file, "%s:%d-%d:-\t", profiles[i].chromosome, profiles[i].start, profiles[i].end);
+        if (profiles[j].strand == FWD_STRAND)
+          fprintf(xcorr_file, "%s:%d-%d:+\t", profiles[j].chromosome, profiles[j].start, profiles[j].end);
+        else
+          fprintf(xcorr_file, "%s:%d-%d:-\t", profiles[j].chromosome, profiles[j].start, profiles[j].end);
+        fprintf(xcorr_file, "%f\t", xcorr[i][j]);
+        fprintf(xcorr_file, "%d\n", profiles[i].length - profiles[j].length);
+      }
     }
   }
 
@@ -207,12 +245,12 @@ int annotate_sc(int argc,  char **argv)
   // Print annotated profiles in BED format
   if (arguments.annotation) {
     fprintf(stderr, "[LOG] ANNOTATING UNKNOWN PROFILES\n");
-    hc_annotate(hc, nprofiles, profiles, arguments.cluster_cutoff);
+    hc_annotate(hc, nprofiles, profiles, xcorr_clone, arguments.cluster_cutoff);
     for (i = 0; i < nprofiles; i++) {
       if ((!arguments.additional_profiles) || ((arguments.additional_profiles) && (strcmp(profiles[i].species, "\0") != 0))) {
         profile_struct_annotation p = profiles[i];
-        if (profiles[i].strand == FWD_STRAND) fprintf(annotation_o_file, "%s\t%d\t%d\t%s\t%f\t+\n", p.chromosome, p.start, p.end, p.annotation, p.anscore);
-        if (profiles[i].strand == REV_STRAND) fprintf(annotation_o_file, "%s\t%d\t%d\t%s\t%f\t-\n", p.chromosome, p.start, p.end, p.annotation, p.anscore);
+        if (profiles[i].strand == FWD_STRAND) fprintf(annotation_o_file, "%s\t%d\t%d\t%s\t%f\t+\t%d\n", p.chromosome, p.start, p.end, p.annotation, p.anscore, p.cluster);
+        if (profiles[i].strand == REV_STRAND) fprintf(annotation_o_file, "%s\t%d\t%d\t%s\t%f\t-\t%d\n", p.chromosome, p.start, p.end, p.annotation, p.anscore, p.cluster);
       }
     }
   }
@@ -221,9 +259,12 @@ int annotate_sc(int argc,  char **argv)
   for (i = 0; i < nprofiles; i++)
     free(profiles[i].profile);
   free(profiles);
-  for (i = 0; i < nprofiles; i++)
+  for (i = 0; i < nprofiles; i++) {
     free(xcorr[i]);
+    free(xcorr_clone[i]);
+  }
   free(xcorr);
+  free(xcorr_clone);
   free(hc);
   fclose(xcorr_file);
   fclose(clusters_file);
