@@ -1,8 +1,8 @@
 #include <annotate/hierarchical.h>
 
 /*
- * compare_double:
- *   Function for double comparison
+ * compare_annotation
+ *   Compare two variables of type annotation_struct
  *
  * @arg const void *a
  *   Pointer to the first value to be compared
@@ -11,13 +11,13 @@
  *
  * @return -1 if a < b. 0 if a = b. 1 if a > b.
  */
-int compare_dvnode (const void *a, const void *b)
+int compare_annotation (const void *a, const void *b)
 {
-  dvnode_struct* aa = *(dvnode_struct**) a;
-  dvnode_struct* bb = *(dvnode_struct**) b;
+  annotation_struct aa = *(annotation_struct*) a;
+  annotation_struct bb = *(annotation_struct*) b;
 
-  if (aa->distance < bb->distance) return -1;
-  if (aa->distance > bb->distance) return  1;
+  if (aa.score < bb.score) return -1;
+  if (aa.score > bb.score) return  1;
   return 0;
 }
 
@@ -110,13 +110,11 @@ void annotate_tree_r(hcnode_struct* hc, int root, int start, int end, profile_st
 void annotate_tree(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, double** correlations, int root, int* cluster)
 {
   int* leafs;
-  int nleafs, i, j, add;
-  dvnode_struct** dv;
+  int nleafs, i, add;
   
   // Initialize 
   nleafs = hc[root].lleafs + hc[root].rleafs;
   leafs = (int*) malloc(sizeof(int) * nleafs);
-  dv = (dvnode_struct**) malloc(sizeof(dvnode_struct*) * (nleafs - 1));
   add = 0;
 
   // Find clustered profiles
@@ -124,63 +122,11 @@ void annotate_tree(hcnode_struct* hc, int nprofiles, profile_struct_annotation* 
 
   // For each unknown leaf, sort remaining leafs by distance
   for (i = 0; i < nleafs; i++) {
-    int idx = 0;
-
-    if (strcmp(profiles[leafs[i]].annotation, "unknown") == 0) {
-      for (j = 0; j < nleafs; j++) {
-        if (j != i) {
-          dv[idx] = (dvnode_struct*) malloc(sizeof(dvnode_struct));
-          dv[idx]->hc_index = leafs[j];
-          dv[idx]->distance = correlations[leafs[i]][leafs[j]];
-          idx++;
-        }
-      }
-      qsort(dv, nleafs - 1, sizeof(dvnode_struct*), compare_dvnode);
-
-      // Assign labels if only 3 leafs
-      if ((nleafs - 1) < 3) {
-        if (strcmp(profiles[dv[0]->hc_index].annotation, "unknown") == 0) {
-          sprintf(profiles[leafs[i]].tmp_annotation, "cluster_%d", *cluster);
-          add++;
-        }
-        else
-          strncpy(profiles[leafs[i]].tmp_annotation, profiles[dv[0]->hc_index].annotation, MAX_FEATURE);
-        profiles[leafs[i]].anscore = correlations[leafs[i]][dv[0]->hc_index];
-      }
-
-      // Assign labels if 3 leafs or more
-      else {
-        if ((strcmp(profiles[dv[0]->hc_index].annotation, profiles[dv[1]->hc_index].annotation) == 0) ||
-            (strcmp(profiles[dv[0]->hc_index].annotation, profiles[dv[2]->hc_index].annotation) == 0)) {
-          if (strcmp(profiles[dv[0]->hc_index].annotation, "unknown") == 0) {
-            sprintf(profiles[leafs[i]].tmp_annotation, "cluster_%d", *cluster);
-            add++;
-          }
-          else
-            strncpy(profiles[leafs[i]].tmp_annotation, profiles[dv[0]->hc_index].annotation, MAX_FEATURE);
-          profiles[leafs[i]].anscore = correlations[leafs[i]][dv[0]->hc_index];
-        }
-        else if (strcmp(profiles[dv[1]->hc_index].annotation, profiles[dv[2]->hc_index].annotation) == 0) {
-          if (strcmp(profiles[dv[1]->hc_index].annotation, "unknown") == 0) {
-            sprintf(profiles[leafs[i]].tmp_annotation, "cluster_%d", *cluster);
-            add++;
-          }
-          else
-            strncpy(profiles[leafs[i]].tmp_annotation, profiles[dv[1]->hc_index].annotation, MAX_FEATURE);
-          profiles[leafs[i]].anscore = correlations[leafs[i]][dv[1]->hc_index];
-        }
-        else {
-          if (strcmp(profiles[dv[0]->hc_index].annotation, "unknown") == 0) {
-            sprintf(profiles[leafs[i]].tmp_annotation, "cluster_%d", *cluster);
-            add++;
-          }
-          else
-            strncpy(profiles[leafs[i]].tmp_annotation, profiles[dv[0]->hc_index].annotation, MAX_FEATURE);
-          profiles[leafs[i]].anscore = correlations[leafs[i]][dv[0]->hc_index];
-        }
-      }
-
-      for (j = 0; j < (nleafs - 1); j++) free(dv[j]);
+    if ((strcmp(profiles[leafs[i]].annotation, "unknown") == 0) &&
+        (strcmp(profiles[leafs[i]].tmp_annotation, "unknown") == 0)) {
+      sprintf(profiles[leafs[i]].tmp_annotation, "cluster_%d", *cluster);
+      profiles[leafs[i]].anscore = hc[root].distance;
+      add++;
     }
 
     profiles[leafs[i]].cluster = *cluster;
@@ -191,7 +137,6 @@ void annotate_tree(hcnode_struct* hc, int nprofiles, profile_struct_annotation* 
 
   // Free structures
   free(leafs);
-  free(dv);
 }
 
 /*
@@ -273,5 +218,52 @@ void hc_annotate(hcnode_struct* hc, int nprofiles, profile_struct_annotation* pr
     else if ((strcmp(profiles[i].annotation, "unknown") == 0) &&
              (strcmp(profiles[i].tmp_annotation, "unknown") != 0))
       strncpy(profiles[i].annotation, profiles[i].tmp_annotation, MAX_FEATURE);
+  }
+}
+
+/*
+ * xcorr_annotate
+ *
+ * @see include/annotate/hierarchical.c
+ */
+void xcorr_annotate(annotation_struct** xcorr, int nprofiles, profile_struct_annotation* profiles)
+{
+  int i, sindex, stotal;
+  annotation_struct top_profiles[3];
+
+  for (i = 0; i < nprofiles; i++) {
+    if (strcmp(profiles[i].annotation, "unknown") == 0) {
+      sindex = 0;
+      stotal = 0;
+
+      annotation_struct* scores = xcorr[i];
+      qsort(scores, nprofiles, sizeof(annotation_struct), compare_annotation);
+
+      while(stotal < 3) {
+        if (scores[sindex].index_i != scores[sindex].index_j) {
+          top_profiles[stotal].score = scores[sindex].score;
+          top_profiles[stotal].index_i = scores[sindex].index_i;
+          top_profiles[stotal].index_j = scores[sindex].index_j;
+          stotal++;
+        }
+        sindex++;
+      }
+
+      if (((strcmp(profiles[top_profiles[0].index_j].annotation, profiles[top_profiles[1].index_j].annotation) == 0)  ||
+           (strcmp(profiles[top_profiles[0].index_j].annotation, profiles[top_profiles[2].index_j].annotation) == 0)) &&
+          (strcmp(profiles[top_profiles[0].index_j].annotation, "unknown") != 0)) {
+        strncpy(profiles[i].tmp_annotation, profiles[top_profiles[0].index_j].annotation, MAX_FEATURE);
+        profiles[i].anscore = top_profiles[0].score;
+      }
+      else if ((strcmp(profiles[top_profiles[1].index_j].annotation, profiles[top_profiles[2].index_j].annotation) == 0) &&
+               (strcmp(profiles[top_profiles[1].index_j].annotation, "unknown") != 0)) {
+        strncpy(profiles[i].tmp_annotation, profiles[top_profiles[1].index_j].annotation, MAX_FEATURE);
+        profiles[i].anscore = top_profiles[1].score;
+      }
+      else if (strcmp(profiles[top_profiles[0].index_j].annotation, "unknown") != 0) {
+        strncpy(profiles[i].tmp_annotation, profiles[top_profiles[0].index_j].annotation, MAX_FEATURE);
+        profiles[i].anscore = top_profiles[0].score;
+      }
+    }
   }
 }

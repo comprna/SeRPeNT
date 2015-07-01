@@ -198,6 +198,10 @@ int annotate_sc(int argc,  char **argv)
       fprintf(stderr, "%s - %s\n", ERR_CORRELATIONS_F_NOT_READABLE, arguments.correlations_f_path);
       return(1);
     }
+
+    xcorr[nprofiles - 1][nprofiles - 1] = 0.0f;
+    xcorr_clone[nprofiles - 1][nprofiles - 1] = 0.0f;
+
     fclose(correlations_file);
   }
 
@@ -217,6 +221,8 @@ int annotate_sc(int argc,  char **argv)
         xcorr_clone[j][i] = 1 - corr;
       }
     }
+    xcorr[nprofiles - 1][nprofiles - 1] = 0.0f;
+    xcorr_clone[nprofiles - 1][nprofiles - 1] = 0.0f;
 
     // Print xcorrelations
     for (i = 0; i < (nprofiles - 1); i++) {
@@ -233,6 +239,27 @@ int annotate_sc(int argc,  char **argv)
         fprintf(xcorr_file, "%d\n", profiles[i].length - profiles[j].length);
       }
     }
+  }
+
+  // Annotate unknown profiles
+  if (arguments.annotation) {
+    fprintf(stderr, "[LOG] ANNOTATING UNKNOWN PROFILES\n");
+
+    annotation_struct** matrix = (annotation_struct**) malloc(sizeof(annotation_struct*) * nprofiles);
+
+    for (i = 0; i < nprofiles; i++) {
+      matrix[i] = (annotation_struct*) malloc(sizeof(annotation_struct) * nprofiles);
+      for (j = 0; j < nprofiles; j++) {
+        matrix[i][j].score = xcorr[i][j];
+        matrix[i][j].index_i = i;
+        matrix[i][j].index_j = j;
+      } 
+    }
+
+    xcorr_annotate(matrix, nprofiles, profiles);
+
+    for (i = 0; i < nprofiles; i++) free(matrix[i]);
+    free(matrix);
   }
 
   // Compute MLINK hierarchical clustering

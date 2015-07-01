@@ -187,14 +187,6 @@ typedef struct {
 } hcnode_struct;
 
 /*
- * Distance vector node
- */
-typedef struct {
-  int hc_index;
-  double distance;
-} dvnode_struct;
-
-/*
  * Struct for fast SERE IDR calculation
  */
 typedef struct {
@@ -210,4 +202,13 @@ typedef struct {
   long* result;
   long nelems;
 } npidr_struct;
+
+/*
+ * Struct for profile annotation
+ */
+typedef struct {
+  double score;
+  int index_i;
+  int index_j;
+} annotation_struct;
 #endif
