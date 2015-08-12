@@ -227,4 +227,10 @@
  */
 #define CORRELATIONS_CONDITION 0
 
+/*
+ * Constants for profile category
+ */
+#define NOVEL 0
+#define KNOWN 1
+
 #endif

@@ -219,6 +219,7 @@ void search_itnode(itnode_struct* root, int low, int high, char* annotation, dou
     if (score > root->profile->anscore) { 
       strncpy(root->profile->annotation, annotation, MAX_FEATURE);
       root->profile->anscore = score;
+      root->profile->category = KNOWN;
     }
   }
 

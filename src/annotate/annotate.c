@@ -20,6 +20,8 @@ int annotate_sc(int argc,  char **argv)
   profile_struct_annotation* profiles;                   // Array of profiles
   map_struct map;                                        // Profile map
   hcnode_struct *hc;                                     // Hierarchical clustering
+  char categories[2][6] = {"NOVEL\0", "KNOWN\0"};        // Array for printing category
+  char strands[2][2] = {"+\0", "-\0"};                   // Array for printing strand
 
   // Initialize options with default values. Parse command line.
   // Exit if command is not well-formed.
@@ -301,12 +303,10 @@ int annotate_sc(int argc,  char **argv)
 
   // Print annotated profiles in BED format
   if (arguments.annotation) {
-    fprintf(stderr, "[LOG] ANNOTATING UNKNOWN PROFILES\n");
     for (i = 0; i < nprofiles; i++) {
       if ((!arguments.additional_profiles) || ((arguments.additional_profiles) && (strcmp(profiles[i].species, "\0") != 0))) {
         profile_struct_annotation p = profiles[i];
-        if (profiles[i].strand == FWD_STRAND) fprintf(annotation_o_file, "%s\t%d\t%d\t%s\t%f\t+\t%d\n", p.chromosome, p.start, p.end, p.annotation, p.anscore, p.cluster);
-        if (profiles[i].strand == REV_STRAND) fprintf(annotation_o_file, "%s\t%d\t%d\t%s\t%f\t-\t%d\n", p.chromosome, p.start, p.end, p.annotation, p.anscore, p.cluster);
+        fprintf(annotation_o_file, "%s\t%d\t%d\t%s\t%f\t%s\t%s\t%d\n", p.chromosome, p.start, p.end, p.annotation, p.anscore, strands[p.strand], categories[p.category], p.cluster);
       }
     }
   }

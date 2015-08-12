@@ -78,6 +78,7 @@ typedef struct {
   double mean;
   double variance;
   double noise[MAX_PROFILE_LENGTH];
+  int32_t category;
 } profile_struct_annotation;
 
 /*
