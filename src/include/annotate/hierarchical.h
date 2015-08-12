@@ -48,8 +48,11 @@ void hc_print(FILE* fp, hcnode_struct* hc, int nprofiles, profile_struct_annotat
  *   An array of profiles
  * @arg double cutoff
  *   The cutoff value to branch the tree
+ *
+ * @return
+ *   The number of clusters
  */
-void hc_branch(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, double cutoff);
+int hc_branch(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, double cutoff);
 
 /*
  * hc_eval

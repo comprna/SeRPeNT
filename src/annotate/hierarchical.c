@@ -158,7 +158,7 @@ void hc_print(FILE* fp, hcnode_struct* hc, int nprofiles, profile_struct_annotat
  *
  * @see include/annotate/hierarchical.h
  */
-void hc_branch(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, double cutoff)
+int hc_branch(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, double cutoff)
 {
   int i, cluster;
 
@@ -180,6 +180,9 @@ void hc_branch(hcnode_struct* hc, int nprofiles, profile_struct_annotation* prof
   // Assign cluster number to each individual non-visited leaf
   for (i = 0; i < nprofiles; i++)
     if (profiles[i].cluster < 0) profiles[i].cluster = cluster++;
+
+  // Return number of clusters
+  return (cluster - 1);
 }
 
 
