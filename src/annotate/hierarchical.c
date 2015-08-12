@@ -1,29 +1,13 @@
 #include <annotate/hierarchical.h>
 
 /*
- * compare_annotation
- *   Compare two variables of type annotation_struct
- *
- * @arg const void *a
- *   Pointer to the first value to be compared
- * @arg const void *b
- *   Pointer to the second value to be compared
- *
- * @return -1 if a < b. 0 if a = b. 1 if a > b.
- */
-int compare_annotation (const void *a, const void *b)
-{
-  annotation_struct aa = *(annotation_struct*) a;
-  annotation_struct bb = *(annotation_struct*) b;
-
-  if (aa.score < bb.score) return -1;
-  if (aa.score > bb.score) return  1;
-  return 0;
-}
-
-/*
  * convert_tree
  *   Recursive function for hc_cluster
+ *
+ * @arg hcnode_struct* tree
+ *   A pointer to the hierarchical clustering solution
+ * @arg index
+ *   Index of the node being visited in the hierarchical clustering solution
  */
 void convert_tree(hcnode_struct* tree, int index)
 {
@@ -48,9 +32,19 @@ void convert_tree(hcnode_struct* tree, int index)
     tree[index].rleafs++;
 }
 
+
 /*
  * print_tree
  *   Recursive function for hc_print
+ *
+ * @arg FILE* fp
+ *   Pointer to the output file descriptor
+ * @arg hcnode_struct* hc
+ *   A pointer to the hierarchical clustering solution
+ * @arg index
+ *   Index of the node being visited in the hierarchical clustering solution
+ * @arg profile_struct_annotation* profiles
+ *   An array of profiles
  */
 void print_tree(FILE* fp, hcnode_struct* hc, int index, profile_struct_annotation* profiles)
 {
@@ -81,63 +75,38 @@ void print_tree(FILE* fp, hcnode_struct* hc, int index, profile_struct_annotatio
   fprintf(fp, ":%f)", hc[index].distance);
 }
 
+
 /*
- * annotate_tree_r
- *   Recursive function for annotate_tree
+ * branch_tree
+ *   Recursive function for hc_branch
+ *
+ * @arg hcnode_struct* hc
+ *   A pointer to the hierarchical clustering solution
+ * @arg index
+ *   Index of the node being visited in the hierarchical clustering solution
+ * @arg profile_struct_annotation* profiles
+ *   An the array of profiles
+ * @arg int cluster
+ *   Cluster number
  */
-void annotate_tree_r(hcnode_struct* hc, int root, int start, int end, profile_struct_annotation* profiles, int* leafs)
+void branch_tree(hcnode_struct* hc, int index, profile_struct_annotation* profiles, int cluster)
 {
   // Mark node as visited
-  hc[root].visited = 1;
+  hc[index].visited = 1;
 
   // Left leaf
-  if (root[hc].left >= 0)
-    leafs[start] = hc[root].left;
+  if (hc[index].left < 0)
+    branch_tree(hc, hc[index].left * (-1) - 1, profiles, cluster);
   else
-    annotate_tree_r(hc, hc[root].left * (-1) - 1, start, start + hc[root].lleafs, profiles, leafs);
+    profiles[hc[index].left].cluster = cluster;
 
   // Right leaf
-  if (root[hc].right >= 0)
-    leafs[end - 1] = hc[root].right;
+  if (hc[index].right < 0)
+    branch_tree(hc, hc[index].right * (-1) - 1, profiles, cluster);
   else
-    annotate_tree_r(hc, hc[root].right * (-1) - 1, end - hc[root].rleafs, end, profiles, leafs);
+    profiles[hc[index].right].cluster = cluster;
 }
 
-/*
- * annotate_tree
- *   Auxiliar function for hc_annotate
- */
-void annotate_tree(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, double** correlations, int root, int* cluster)
-{
-  int* leafs;
-  int nleafs, i, add;
-  
-  // Initialize 
-  nleafs = hc[root].lleafs + hc[root].rleafs;
-  leafs = (int*) malloc(sizeof(int) * nleafs);
-  add = 0;
-
-  // Find clustered profiles
-  annotate_tree_r(hc, root, 0, nleafs, profiles, leafs);
-
-  // For each unknown leaf, sort remaining leafs by distance
-  for (i = 0; i < nleafs; i++) {
-    if ((strcmp(profiles[leafs[i]].annotation, "unknown") == 0) &&
-        (strcmp(profiles[leafs[i]].tmp_annotation, "unknown") == 0)) {
-      sprintf(profiles[leafs[i]].tmp_annotation, "cluster_%d", *cluster);
-      profiles[leafs[i]].anscore = hc[root].distance;
-      add++;
-    }
-
-    profiles[leafs[i]].cluster = *cluster;
-  }
-
-  // Increment cluster pointer
-  if (add) (*cluster)++;
-
-  // Free structures
-  free(leafs);
-}
 
 /*
  * hc_cluster
@@ -171,6 +140,7 @@ hcnode_struct* hc_cluster(double** correlation, int nprofiles)
   return(hc);
 }
 
+
 /*
  * hc_print
  *
@@ -182,16 +152,17 @@ void hc_print(FILE* fp, hcnode_struct* hc, int nprofiles, profile_struct_annotat
   fprintf(fp, ";");
 }
 
+
 /*
- * hc_annotate
+ * hc_branch
  *
  * @see include/annotate/hierarchical.h
  */
-void hc_annotate(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, double** correlations, double cutoff)
+void hc_branch(hcnode_struct* hc, int nprofiles, profile_struct_annotation* profiles, double cutoff)
 {
   int i, cluster;
 
-  // Annotate each node in the tree ascendently by distance
+  // Assign cluster number to each branch
   cluster = 1;
   for (i = 0; i < (nprofiles - 1); i++) {
     if (!hc[i].visited) {
@@ -202,68 +173,116 @@ void hc_annotate(hcnode_struct* hc, int nprofiles, profile_struct_annotation* pr
         parent = hc[root].parent * (-1) - 1;
       }
       if (hc[root].distance <= cutoff)
-        annotate_tree(hc, nprofiles, profiles, correlations, root, &cluster);
+        branch_tree(hc, root, profiles, cluster++);
     }
   }
 
-  // Assign labels
-  for (i = 0; i < nprofiles; i++) {
-    if (profiles[i].cluster < 0)
-      profiles[i].cluster = cluster;
-
-    if ((strcmp(profiles[i].annotation, "unknown") == 0) &&
-        (strcmp(profiles[i].tmp_annotation, "unknown") == 0)) {
-      sprintf(profiles[i].annotation, "cluster_%d", cluster++);
-    }
-    else if ((strcmp(profiles[i].annotation, "unknown") == 0) &&
-             (strcmp(profiles[i].tmp_annotation, "unknown") != 0))
-      strncpy(profiles[i].annotation, profiles[i].tmp_annotation, MAX_FEATURE);
-  }
+  // Assign cluster number to each individual non-visited leaf
+  for (i = 0; i < nprofiles; i++)
+    if (profiles[i].cluster < 0) profiles[i].cluster = cluster++;
 }
 
+
 /*
- * xcorr_annotate
+ * hc_eval
  *
- * @see include/annotate/hierarchical.c
+ * @see include/annotate/hierarchical.h
  */
-void xcorr_annotate(annotation_struct** xcorr, int nprofiles, profile_struct_annotation* profiles)
+double hc_eval(int nprofiles, profile_struct_annotation* profiles)
 {
-  int i, sindex, stotal;
-  annotation_struct top_profiles[3];
+  int i, j, nclusters, nannotated, nclasses;
+  double score, h_k, h_c, h_conk, h_konc, homogeneity, completeness;
+  int *clusters, *classes;
+  char** names;
+  int** contingency;
 
+  // Initialize variables
+  clusters = (int*) malloc(sizeof(int) * nprofiles);
+  classes = (int*) malloc(sizeof(int) * nprofiles);
+  names = (char**) malloc(sizeof(char*) * nprofiles);
+  contingency = (int**) malloc(sizeof(int*) * nprofiles);
   for (i = 0; i < nprofiles; i++) {
-    if (strcmp(profiles[i].annotation, "unknown") == 0) {
-      sindex = 0;
-      stotal = 0;
+    clusters[i] = 0;
+    classes[i] = 0;
+    contingency[i] = (int*) malloc(sizeof(int) * nprofiles);
+    for (j = 0; j < nprofiles; j++) contingency[i][j] = 0;
+  }
 
-      annotation_struct* scores = xcorr[i];
-      qsort(scores, nprofiles, sizeof(annotation_struct), compare_annotation);
+  // Calculate number of classes and number of clusters
+  nclusters = 0;
+  nannotated = 0;
+  nclasses = 0;
+  for (i = 0; i < nprofiles; i++) {
+    profile_struct_annotation p = profiles[i];
+    if (strcmp(p.annotation, "unknown") != 0) {
+      nannotated++;
+      clusters[p.cluster - 1]++;
+      j = 0;
+      while ((j < nclasses) && (strcmp(names[j], p.annotation) != 0)) j++;
+      if (j == nclasses) {
+        names[j] = (char*) malloc(sizeof(char) * MAX_FEATURE);
+        strncpy(names[j], p.annotation, MAX_FEATURE);
+        nclasses++;
+      }
+      classes[j]++;
+      contingency[p.cluster - 1][j]++;
+    }
+    if (nclusters < p.cluster) nclusters = p.cluster;
+  }
 
-      while(stotal < 3) {
-        if (scores[sindex].index_i != scores[sindex].index_j) {
-          top_profiles[stotal].score = scores[sindex].score;
-          top_profiles[stotal].index_i = scores[sindex].index_i;
-          top_profiles[stotal].index_j = scores[sindex].index_j;
-          stotal++;
-        }
-        sindex++;
-      }
+  // Calculate H(K)
+  h_k = 0;
+  for (i = 0; i < nclusters; i++) {
+    if (clusters[i] > 0) {
+      double term = ((double) clusters[i]) / ((double) nannotated);
+      double logterm = log2f(term);
+      h_k -= term * logterm;
+    }
+  }
 
-      if (((strcmp(profiles[top_profiles[0].index_j].annotation, profiles[top_profiles[1].index_j].annotation) == 0)  ||
-           (strcmp(profiles[top_profiles[0].index_j].annotation, profiles[top_profiles[2].index_j].annotation) == 0)) &&
-          (strcmp(profiles[top_profiles[0].index_j].annotation, "unknown") != 0)) {
-        strncpy(profiles[i].tmp_annotation, profiles[top_profiles[0].index_j].annotation, MAX_FEATURE);
-        profiles[i].anscore = top_profiles[0].score;
-      }
-      else if ((strcmp(profiles[top_profiles[1].index_j].annotation, profiles[top_profiles[2].index_j].annotation) == 0) &&
-               (strcmp(profiles[top_profiles[1].index_j].annotation, "unknown") != 0)) {
-        strncpy(profiles[i].tmp_annotation, profiles[top_profiles[1].index_j].annotation, MAX_FEATURE);
-        profiles[i].anscore = top_profiles[1].score;
-      }
-      else if (strcmp(profiles[top_profiles[0].index_j].annotation, "unknown") != 0) {
-        strncpy(profiles[i].tmp_annotation, profiles[top_profiles[0].index_j].annotation, MAX_FEATURE);
-        profiles[i].anscore = top_profiles[0].score;
+  // Calculate H(C)
+  h_c = 0;
+  for (i = 0; i < nclasses; i++) {
+    if (classes[i] > 0) {
+      double term = ((double) classes[i]) / ((double) nannotated);
+      double logterm = log2f(term);
+      h_c -= term * logterm;
+    }
+  }
+
+  // Calculate H(C|K) and H(K|C)
+  h_conk = 0;
+  h_konc = 0;
+  for (i = 0; i < nclusters; i++) {
+    for (j = 0; j < nclasses; j++) {
+      if (contingency[i][j] > 0) {
+        double term_a = ((double) contingency[i][j]) / ((double) nannotated);
+        double term_b = ((double) contingency[i][j]) / ((double) clusters[i]);
+        double logterm = log2f(term_b);
+        h_conk += term_a * logterm;
+        term_b = ((double) contingency[i][j]) / ((double) classes[j]);
+        logterm = log2f(term_b);
+        h_konc += term_a * logterm;
       }
     }
   }
+  h_conk *= -1;
+  h_konc *= -1;
+
+  // Calculate V-measure
+  homogeneity = 1;
+  completeness = 1;
+  if (h_c != 0) homogeneity = 1 - (h_conk / h_c);
+  if (h_k != 0) completeness = 1 - (h_konc / h_k);
+  score = (2 * homogeneity * completeness) / (homogeneity + completeness);
+
+  // Free arrays
+  free(clusters);
+  free(classes);
+  for (i = 0; i < nclasses; i++) free(names[i]);
+  for (i = 0; i < nprofiles; i++) free(contingency[i]);
+  free(names);
+  free(contingency);
+
+  return (score);
 }

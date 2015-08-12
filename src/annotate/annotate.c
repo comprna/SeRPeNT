@@ -39,21 +39,15 @@ int annotate_sc(int argc,  char **argv)
 
   // Open output files for writing results.
   // Exit if output files do not exist or are not readable.
-  char *xcorr_file_name = malloc((MAX_PATH + strlen(CROSSCOR_SUFFIX) + 2) * sizeof(char));
   char *clusters_file_name = malloc((MAX_PATH + strlen(CLUSTERS_SUFFIX) + 2) * sizeof(char));
-  strncpy(xcorr_file_name, arguments.output_f_path, MAX_PATH);
-  strcat(xcorr_file_name, PATH_SEPARATOR);
-  strcat(xcorr_file_name, CROSSCOR_SUFFIX);
   strncpy(clusters_file_name, arguments.output_f_path, MAX_PATH);
   strcat(clusters_file_name, PATH_SEPARATOR);
   strcat(clusters_file_name, CLUSTERS_SUFFIX);
-  xcorr_file = fopen(xcorr_file_name, "w");
   clusters_file = fopen(clusters_file_name, "w");
-  if (!xcorr_file || !clusters_file) {
+  if (!clusters_file) {
     fprintf(stderr, "%s\n", ERR_OUTPUT_F_NOT_WRITABLE);
     return (1);
   }
-  free(xcorr_file_name);
   free(clusters_file_name);
 
   // Open annotation output file if annotation input file is provided
@@ -212,7 +206,7 @@ int annotate_sc(int argc,  char **argv)
       xcorr[i][i] = (double) 0.0f;
       xcorr_clone[i][i] = (double) 0.0f;
       for (j = i + 1; j < nprofiles; j++) {
-        double corr = xdtw(&profiles[i], &profiles[j]);//nxcorr(&profiles[i], &profiles[j]);
+        double corr = xdtw(&profiles[i], &profiles[j]);
         if (corr < 0)
           corr = 0;
         xcorr[i][j] = 1 - corr;
@@ -225,6 +219,18 @@ int annotate_sc(int argc,  char **argv)
     xcorr_clone[nprofiles - 1][nprofiles - 1] = 0.0f;
 
     // Print xcorrelations
+    char *xcorr_file_name = malloc((MAX_PATH + strlen(CROSSCOR_SUFFIX) + 2) * sizeof(char));
+    strncpy(xcorr_file_name, arguments.output_f_path, MAX_PATH);
+    strcat(xcorr_file_name, PATH_SEPARATOR);
+    strcat(xcorr_file_name, CROSSCOR_SUFFIX);
+    xcorr_file = fopen(xcorr_file_name, "w");
+
+    if (!xcorr_file) {
+      fprintf(stderr, "%s\n", ERR_OUTPUT_F_NOT_WRITABLE);
+      return (1);
+    }
+    free(xcorr_file_name);
+
     for (i = 0; i < (nprofiles - 1); i++) {
       for (j = i + 1; j < nprofiles; j++) {
         if (profiles[i].strand == FWD_STRAND)
@@ -235,10 +241,11 @@ int annotate_sc(int argc,  char **argv)
           fprintf(xcorr_file, "%s:%d-%d:+\t", profiles[j].chromosome, profiles[j].start, profiles[j].end);
         else
           fprintf(xcorr_file, "%s:%d-%d:-\t", profiles[j].chromosome, profiles[j].start, profiles[j].end);
-        fprintf(xcorr_file, "%f\t", xcorr[i][j]);
-        fprintf(xcorr_file, "%d\n", profiles[i].length - profiles[j].length);
+        fprintf(xcorr_file, "%f\n", xcorr[i][j]);
       }
     }
+
+    fclose(xcorr_file);
   }
 
   // Annotate unknown profiles
@@ -268,11 +275,33 @@ int annotate_sc(int argc,  char **argv)
   hc = hc_cluster(xcorr, nprofiles);
   hc_print(clusters_file, hc, nprofiles, profiles);
 
-  // Annotate unknown profiles
+  // Branch the tree according the cutoff
+  if (arguments.cluster_cutoff < 0) {
+    double score = -1;
+    double cutoff = 0;
+    int step;
+    for (step = 100; step >= 0; step--) {
+      for (i = 0; i < (nprofiles - 1); i++) hc[i].visited = 0;
+      for (i = 0; i < nprofiles; i++) profiles[i].cluster = -1;
+      double tmpcutoff = ((double)1)/((double)step);
+      hc_branch(hc, nprofiles, profiles, tmpcutoff);
+      double tmpscore = hc_eval(nprofiles, profiles);
+      if (tmpscore > score) {
+        score = tmpscore;
+        cutoff = tmpcutoff;
+      } 
+    }
+    for (i = 0; i < nprofiles; i++) profiles[i].cluster = -1;
+    for (i = 0; i < (nprofiles - 1); i++) hc[i].visited = 0;
+    hc_branch(hc, nprofiles, profiles, cutoff);
+    fprintf(stderr, "[LOG]   Estimated cutoff is %f\n", cutoff);
+  }
+  else
+    hc_branch(hc, nprofiles, profiles, arguments.cluster_cutoff);
+
   // Print annotated profiles in BED format
   if (arguments.annotation) {
     fprintf(stderr, "[LOG] ANNOTATING UNKNOWN PROFILES\n");
-    hc_annotate(hc, nprofiles, profiles, xcorr_clone, arguments.cluster_cutoff);
     for (i = 0; i < nprofiles; i++) {
       if ((!arguments.additional_profiles) || ((arguments.additional_profiles) && (strcmp(profiles[i].species, "\0") != 0))) {
         profile_struct_annotation p = profiles[i];
@@ -293,7 +322,6 @@ int annotate_sc(int argc,  char **argv)
   free(xcorr);
   free(xcorr_clone);
   free(hc);
-  fclose(xcorr_file);
   fclose(clusters_file);
   fclose(profiles_file);
   if (arguments.additional_profiles)
