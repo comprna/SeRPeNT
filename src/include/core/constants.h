@@ -195,7 +195,7 @@
 /*
  * Cluster cutoff default value
  */
-#define CLUSTER_CUTOFF 0.01f
+#define CLUSTER_CUTOFF -1.0f
 
 /*
  * Condition for existence of annotation file
