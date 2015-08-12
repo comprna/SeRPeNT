@@ -1,16 +1,16 @@
 #include <annotate/annotation.h>
 
 /*
- *  * compare_annotation
- *   *   Compare two variables of type annotation_struct
- *    *
- *     * @arg const void *a
- *      *   Pointer to the first value to be compared
- *       * @arg const void *b
- *        *   Pointer to the second value to be compared
- *         *
- *          * @return -1 if a < b. 0 if a = b. 1 if a > b.
- *           */
+ * compare_annotation
+ *   Compare two variables of type annotation_struct
+ *
+ * @arg const void *a
+ *   Pointer to the first value to be compared
+ * @arg const void *b
+ *   Pointer to the second value to be compared
+ *
+ * @return -1 if a < b. 0 if a = b. 1 if a > b.
+ */
 int compare_annotation (const void *a, const void *b)
 {
   annotation_struct aa = *(annotation_struct*) a;
