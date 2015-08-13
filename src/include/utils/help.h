@@ -14,57 +14,78 @@ The srnap subcommands include:\n\n\
 Summary   : ncRNA discovery and profiling from small RNA-Seq data\n\n\
 Usage     : srnap profiles [OPTIONS] replicate_1.bam ... replicate_n.bam output_folder\n\n\
 Options   :\n\
-           -c, --contigs     Profile definition\n\
-                             Format is <minlen:maxlen:spacing:minheight:trimming>, where:\n\
-                               - <minlen> is the minimum length of the contig. Contigs shorter than <minlen> are not reported. Must be > 5.\n\
-                               - <maxlen> is the maximum length of the contig. Contigs longer than <maxlen> are not reported. Must be > minlen.\n\
-                               - <spacing> is the maximum distance between contigs. Contigs separated by <spacing> or less bp are considered the same contig. Must be >= 0.\n\
-                               - <minheight> is the minimum number of piled-up reads. Contigs that have less than <minheight> piled-up reads are not reported. Must be > 0.\n\
-                               - <trimming> is the number of bases to trim. Bases in the 5' and 3' sites of the contig that have less than <trimming> piled-up reads are trimmed. Must be >= 0.\n\
-                             [ Default is 16:200:20:50:5 ]\n\n\
-           -r, --replicates  Replicates treatment\n\
-                             Format is <pool> | <mean> | <replicate:number>, where:\n\
-                               - <pool> : Profiles are built by pooling the reads of all the replicates.\n\
-                               - <mean> : Profiles are built by averaging the reads of all the replicates.\n\
-                               - <replicate:number> : Profiles are built by using only the reads of one replicate.\n\
-                             [ Default is pool ]\n\n\
-           -i, --ic          Irreproducibility control\n\
-                             Format is <method:cutoff> | <common> | <none>, where:\n\
-                               - <method> is the irreproducibility control method. Options are:\n\
-                                 - sere : Single-parameter quality control. (Schulze et al. BMC Genomics 2012)\n\
-                                 - idr  : Irreproducibility discovery rate. (Li et al. The Annals of Applied Statistics 2011)\n\
-                               - <cutoff> is the cutoff value. Contigs that have an irreproducibility score higher than <cutoff> are not reported.\n\
-                               - <common> : Contigs that do not overlap in all the replicates are not reported.\n\
-                               - <none>   : All contigs are reported.\n\
-                             [ Default is common ]\n\n\
-Output    :\n\
+           -f   Read filtering\n\
+                Format is <minreadlen>, where:\n\
+                  - <minreadlen> is the minimum required length for the reads. Reads shorter than <readlen> are discarded. If 0, no reads are discarded. Must be >= 0.\n\
+                [ Default is 0 ]\n\n\
+           -i   Irreproducibility control for contigs\n\
+                Format is <method:cutoff> | <common> | <none>, where:\n\
+                  - <method> is the irreproducibility control method. Options are:\n\
+                    - sere : Single-parameter quality control. (Schulze et al. BMC Genomics 2012)\n\
+                    - idr  : Non-parametric irreproducibility discovery rate. (Dobin et al. Bioinformatics 2013)\n\
+                  - <cutoff> is the cutoff value. Contigs that have an irreproducibility score higher than <cutoff> are not reported. Must be > 0.\n\
+                  - <common> : Contigs that do not overlap in all the replicates are not reported.\n\
+                  - <none>   : All contigs are reported.\n\
+                [ Default is common ]\n\n\
+           -r   Replicates treatment\n\
+                Format is <pool> | <mean> | <replicate:repnumber>, where:\n\
+                  - <pool> : Profiles are built by pooling the reads of all the replicates.\n\
+                  - <mean> : Profiles are built by averaging the reads of all the replicates.\n\
+                  - <replicate:repnumber> : Profiles are built by using only the reads of the <repnumber> replicate.\n\
+                [ Default is pool ]\n\n\
+           -t   Trimming\n\
+                Format is <trim_threshold:trim_min:trim_max>\n\
+                  - <trim_percentage> is the trimming threshold. Nucleotides in the ends of the profile having less than <trim_precentage> percent of reads compared to the\n\
+                                      maximum height will be trimmed.\n\
+                  - <trim_min> is the trimming minimum height. All nucleotides in both ends of the profile having less than <trim_min> reads will be trimmed.\n\
+                  - <trim_max> is the trimming maximum height. No nucleotides in both ends of the profile having more than <trim_max> reads will be trimmed.\n\
+                [ Default is 0.1:2:10 ]\n\n\
+           -p   Profile definition\n\
+                Format is <minlen:maxlen:spacing:minheight:trimming>, where:\n\
+                  - <minlen> is the minimum length of the profile after trimming. Profiles shorter than <minlen> are not reported. Must be > 5.\n\
+                  - <maxlen> is the maximum length of the profile after trimming. Profiles longer than <maxlen> are not reported. Must be >= minlen.\n\
+                  - <spacing> is the maximum distance between profiles. Profiles separated by <spacing> or less bp are merged into one single profile. Must be >= 0.\n\
+                  - <minheight> is the minimum number of piled-up reads. Profiles that have less than <minheight> piled-up reads are not reported. Must be > 0.\n\
+                [ Default is 16:200:20:50 ]\n\n\
+Output :\n\
            output_folder/profiles.dat : List of ncRNA profiles with per-base heights\n\
            output_folder/contigs.dat  : List of unfiltered contigs\n\n\
-Example   :\n\
-           srnap profiles -c 20:200:20:50:5 -r pool -i sere:2"
+Examples :\n\
+           srnap profiles -f 20 -i sere:2 -r pool -t 0.1:5:20 -p 20:200:39:100 replicate1.bam replicate2.bam output_dir"
 
 #define ANNOTATE_HELP_MSG "Tool      : annotate\n\n\
 Summary   : ncRNA clustering, classification and annotation from profile data\n\n\
 Usage     : srnap annotate [OPTIONS] profiles_file.dat output_folder\n\n\
-Options   : \n\
-            -a, --afile  Annotation file\n\
-                         Format is <annotation_file>, where:\n\
-                           - <annotation_file> is a BED file with annotated features\n\
-                         [ No default value ]\n\n\
-            -p, --pfile  Additional profiles file\n\
-                         Format is <species:profiles_file>, where:\n\
-                           - <species> is the name of the species where the profiles comes from. e.g. hsap.\n\
-                           - <profiles_file> is a profiles file\n\
-                         [ No default value ]\n\n\
-            -c, --cutoff  Cutoff for label propagation\n\
-                          Format is <cutoff>, where:\n\
-                            - <cutoff> is the cutoff of the hierarchical clustering distance\n\
-                          [ Default is 0.01 ]\n\n\
+Options   :\n\
+            -a   Annotation file\n\
+                 Format is <annotation_file>, where:\n\
+                   - <annotation_file> is a BED file with annotated features\n\
+                 [ No default value ]\n\n\
+            -d   Additional profiles file\n\
+                 Format is <species:profiles_file>, where:\n\
+                   - <species> is the name of the species where the profiles comes from. e.g. hsap.\n\
+                   - <profiles_file> is a profiles file\n\
+                 [ No default value ]\n\n\
+            -o   Overlapping parameters\n\
+                 Format is <feature_to_profile:profile_to_feature>, where:\n\
+                   - <feature_to_profile> is the percentage of nucleotides from the feature that overlap the profile\n\
+                   - <profile_to_feature> is the percentage of nucleotides from the profile that overlap the feature\n\
+                 [ Default is 0.9:0.5 ]\n\n\
+            -c   Cutoff for branching\n\
+                 Format is <cutoff>, where:\n\
+                   - <cutoff> is the distance threshold for branching the hierarchical clustering solution\n\
+                 If no -c option is specified, srnap calculates the optimal cutoff\n\
+                 [ No default value ]\n\n\
+            -x   Distance file\n\
+                 Format is <distance_file>, where:\n\
+                   - <distance_file> is the file with pairwise distances between profiles\n\
+                 When -x option is specified, distances are not calculated and directly taken from the provided file\n\
+                 [ No default value ]\n\n\
 Output    :\n\
-           output_folder/crosscorr.dat    : List of cross correlation coefficients between pairs of profiles\n\
-           output_folder/clusters.neWick  : List of clustered profiles\n\
-           output_folder/annotation.bed   : List of annotated features in BED file (only if annotation file is provided)\n\n\
-Example   :\n\
-           srnap annotate -c 0.05 -a hsap_micrornas.bed profiles.dat output_dir\n\
-           srnap annotate -a hsap_micornas.bed -p hsap:hsap_profiles.dat profiles.dat output_dir"
+            output_folder/crosscorr.dat    : List of distances between pairs of profiles (only if no distance file is provided)\n\
+            output_folder/clusters.neWick  : List of clustered profiles\n\
+            output_folder/annotation.bed   : List of annotated features in BED file (only if annotation file is provided)\n\n\
+Examples  :\n\
+            srnap annotate -a hsap_micrornas.bed profiles.dat output_dir\n\
+            srnap annotate -a hsap_micrornas.bed -x crosscor.dat profiles.dat output_dir"
 #endif
