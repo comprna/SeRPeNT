@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -g -c -Wall
-OBJS = build/profiles.o build/paramprof.o build/bheap.o build/idr.o build/alignio.o build/trimming.o build/xcorr.o build/iofile.o build/paramclust.o build/cluster.o build/hierarchical.o build/itvltree.o build/dtw.o build/profilemap.o build/annotation.o build/annotate.o
+OBJS = build/profiles.o build/paramprof.o build/bheap.o build/idr.o build/alignio.o build/trimming.o build/xcorr.o build/iofile.o build/paramclust.o build/cluster.o build/hierarchical.o build/itvltree.o build/dtw.o build/strmap.o build/profilemap.o build/annotation.o build/annotate.o
 
 all : srnap
 
@@ -25,8 +25,11 @@ profilemap.o : itvltree.o
 hierarchical.o : cluster.o
 	$(CC) $(CFLAGS) src/annotate/hierarchical.c -Isrc/include -o build/hierarchical.o
 
-annotation.o : setup
+annotation.o : strmap.o
 	$(CC) $(CFLAGS) src/annotate/annotation.c -Isrc/include -o build/annotation.o
+
+strmap.o : setup
+	$(CC) $(CFLAGS) src/annotate/strmap.c -Isrc/include -o build/strmap.o
 
 dtw.o : setup
 	$(CC) $(CFLAGS) src/annotate/dtw.c -Isrc/include -o build/dtw.o
