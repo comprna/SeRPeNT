@@ -50,11 +50,6 @@ void xcorr_annotate(annotation_struct** xcorr, int nprofiles, profile_struct_ann
         sindex++;
       }
 
-/*fprintf(stderr, "%s:%d-%d:%d = [", profiles[i].chromosome, profiles[i].start, profiles[i].end, profiles[i].strand);
-fprintf(stderr, "%s:%d-%d:%d, ", profiles[top_profiles[0].index_j].chromosome, profiles[top_profiles[0].index_j].start, profiles[top_profiles[0].index_j].end, profiles[top_profiles[0].index_j].strand);
-fprintf(stderr, "%s:%d-%d:%d, ", profiles[top_profiles[1].index_j].chromosome, profiles[top_profiles[1].index_j].start, profiles[top_profiles[1].index_j].end, profiles[top_profiles[1].index_j].strand);
-fprintf(stderr, "%s:%d-%d:%d]\n", profiles[top_profiles[0].index_j].chromosome, profiles[top_profiles[2].index_j].start, profiles[top_profiles[2].index_j].end, profiles[top_profiles[2].index_j].strand);*/
-
       if (((strcmp(profiles[top_profiles[0].index_j].annotation, profiles[top_profiles[1].index_j].annotation) == 0)  ||
            (strcmp(profiles[top_profiles[0].index_j].annotation, profiles[top_profiles[2].index_j].annotation) == 0)) &&
           (strcmp(profiles[top_profiles[0].index_j].annotation, "unknown") != 0)) {
@@ -72,4 +67,78 @@ fprintf(stderr, "%s:%d-%d:%d]\n", profiles[top_profiles[0].index_j].chromosome, 
       }
     }
   }
+}
+
+
+/*
+ * cluster_annotate
+ *
+ * @see include/annotate/annotation.c
+ */
+void cluster_annotate(int nclusters, int nprofiles, profile_struct_annotation* profiles)
+{
+  int i, j, max_profiles_per_cluster, nclasses;
+  int* profiles_per_cluster;
+  int** profiles_index;
+  StrMap *sm;
+  char buffer[MAX_FEATURE];
+
+  // Initialize data structures
+  max_profiles_per_cluster = nprofiles - (nclusters - 1);
+  profiles_per_cluster = (int*) malloc(nclusters * sizeof(int));
+  profiles_index = (int**) malloc(nclusters * sizeof(int*));
+  for (i = 0; i < nclusters; i++) {
+    profiles_per_cluster[i] = 0;
+    profiles_index[i] = (int*) malloc(max_profiles_per_cluster * sizeof(int));
+    for (j = 0; j < max_profiles_per_cluster; j++) profiles_index[i][j] = -1;
+  }
+  sm = sm_new(nprofiles);
+  
+  // Fill data structures
+  nclasses = 0;
+  for (i = 0; i < nprofiles; i++) {
+    int cindex = profiles[i].cluster - 1;
+    j = 0;
+
+    profiles_per_cluster[cindex]++;
+    while (profiles_index[cindex][j] >= 0) j++;
+    profiles_index[cindex][j] = i;
+
+    if (sm_get(sm, profiles[i].annotation, buffer, MAX_FEATURE) == 0) {
+      sprintf(buffer, "%d", nclasses);
+      sm_put(sm, profiles[i].annotation, buffer);
+      nclasses++;
+    }
+  }
+
+  // Annotate unknown profiles in a cluster with the majority class
+  for (i = 0; i < nclusters; i++) {
+    int max = 0;
+    char class[MAX_FEATURE];
+    int* profiles_per_class = (int*) malloc(sizeof(int) * nclasses);
+
+    for (j = 0; j < nclasses; j++) profiles_per_class[j] = 0;
+
+    for (j = 0; j < profiles_per_cluster[i]; j++) {
+      int pindex = profiles_index[i][j];
+      if (sm_get(sm, profiles[pindex].annotation, buffer, MAX_FEATURE) != 0) profiles_per_class[atoi(buffer)]++;
+      if (max < profiles_per_class[atoi(buffer)]) {
+        max = profiles_per_class[atoi(buffer)];
+        strncpy(class, profiles[pindex].annotation, MAX_FEATURE);
+      }
+    }
+
+    for (j = 0; j < profiles_per_cluster[i]; j++) {
+      int pindex = profiles_index[i][j];
+      if (strcmp(profiles[pindex].annotation, "unknown") == 0) strncpy(profiles[pindex].annotation, class, MAX_FEATURE);
+    }
+
+    free(profiles_per_class);
+  }
+
+  // Free data structures
+  for (i = 0; i < nclusters; i++) free(profiles_index[i]);
+  free(profiles_index);
+  free(profiles_per_cluster);
+  sm_delete(sm);
 }
