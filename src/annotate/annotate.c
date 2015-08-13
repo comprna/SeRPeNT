@@ -14,6 +14,7 @@ int annotate_sc(int argc,  char **argv)
   int result;                                            // Result of any operation
   char* error_message;                                   // Error message to display in case of abnormal termination
   int nprofiles;                                         // Total number of profiles
+  int nclusters;                                         // Total number of clusters
   double** xcorr;                                        // 2-dimensional matrix containing correlations between profiles
   double** xcorr_clone;                                  // Clone of xcorr above
   int i, j, index;                                       // Multi-purpose indexes
@@ -250,27 +251,6 @@ int annotate_sc(int argc,  char **argv)
     fclose(xcorr_file);
   }
 
-  // Annotate unknown profiles
-  if (arguments.annotation) {
-    fprintf(stderr, "[LOG] ANNOTATING UNKNOWN PROFILES\n");
-
-    annotation_struct** matrix = (annotation_struct**) malloc(sizeof(annotation_struct*) * nprofiles);
-
-    for (i = 0; i < nprofiles; i++) {
-      matrix[i] = (annotation_struct*) malloc(sizeof(annotation_struct) * nprofiles);
-      for (j = 0; j < nprofiles; j++) {
-        matrix[i][j].score = xcorr[i][j];
-        matrix[i][j].index_i = i;
-        matrix[i][j].index_j = j;
-      } 
-    }
-
-    xcorr_annotate(matrix, nprofiles, profiles);
-
-    for (i = 0; i < nprofiles; i++) free(matrix[i]);
-    free(matrix);
-  }
-
   // Compute MLINK hierarchical clustering
   // Print in neWick format
   fprintf(stderr, "[LOG] PERFORMING HIERARCHICAL CLUSTERING\n");
@@ -295,11 +275,32 @@ int annotate_sc(int argc,  char **argv)
     }
     for (i = 0; i < nprofiles; i++) profiles[i].cluster = -1;
     for (i = 0; i < (nprofiles - 1); i++) hc[i].visited = 0;
-    hc_branch(hc, nprofiles, profiles, cutoff);
+    nclusters = hc_branch(hc, nprofiles, profiles, cutoff);
     fprintf(stderr, "[LOG]   Estimated cutoff is %f\n", cutoff);
   }
   else
-    hc_branch(hc, nprofiles, profiles, arguments.cluster_cutoff);
+    nclusters = hc_branch(hc, nprofiles, profiles, arguments.cluster_cutoff);
+
+  // Annotate unknown profiles
+  if (arguments.annotation) {
+    fprintf(stderr, "[LOG] ANNOTATING UNKNOWN PROFILES\n");
+
+    annotation_struct** matrix = (annotation_struct**) malloc(sizeof(annotation_struct*) * nprofiles);
+
+    for (i = 0; i < nprofiles; i++) {
+      matrix[i] = (annotation_struct*) malloc(sizeof(annotation_struct) * nprofiles);
+      for (j = 0; j < nprofiles; j++) {
+        matrix[i][j].score = xcorr[i][j];
+        matrix[i][j].index_i = i;
+        matrix[i][j].index_j = j;
+      }
+    }
+
+    xcorr_annotate(matrix, nprofiles, profiles);
+
+    for (i = 0; i < nprofiles; i++) free(matrix[i]);
+    free(matrix);
+  }
 
   // Print annotated profiles in BED format
   if (arguments.annotation) {
