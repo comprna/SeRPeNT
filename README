@@ -41,7 +41,7 @@ The srnap subcommands include:
                 Format is <method:cutoff> | <common> | <none>, where:
                   - <method> is the irreproducibility control method. Options are:
                     - sere : Single-parameter quality control. (Schulze et al. BMC Genomics 2012)
-                    - idr  : Irreproducibility discovery rate. (Li et al. The Annals of Applied Statistics 2011)
+                    - idr  : Non-parametric irreproducibility discovery rate. (Dobin et al. Bioinformatics 2013)
                   - <cutoff> is the cutoff value. Contigs that have an irreproducibility score higher than <cutoff> are not reported. Must be > 0.
                   - <common> : Contigs that do not overlap in all the replicates are not reported.
                   - <none>   : All contigs are reported.
@@ -78,7 +78,7 @@ The srnap subcommands include:
 
 **Examples** : 
 
-    srnap profiles -f 20 -i sere:2 -r pool -p 20:200:20:50:5 replicate1.bam replicate2.bam output_dir
+    srnap profiles -f 20 -i sere:2 -r pool -t 0.1:5:20 -p 20:200:39:100 replicate1.bam replicate2.bam output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Tool** : annotate
 
@@ -95,20 +95,33 @@ The srnap subcommands include:
                    - <annotation_file> is a BED file with annotated features
                  [ No default value ]
 
-            -x   Additional profiles file
+            -d   Additional profiles file
                  Format is <species:profiles_file>, where:
                    - <species> is the name of the species where the profiles comes from. e.g. hsap.
                    - <profiles_file> is a profiles file
                  [ No default value ]
 
-            -c   Cutoff for label propagation
+            -o   Overlapping parameters
+                 Format is <feature_to_profile:profile_to_feature>, where:
+                   - <feature_to_profile> is the percentage of nucleotides from the feature that overlap the profile
+                   - <profile_to_feature> is the percentage of nucleotides from the profile that overlap the feature
+                 [ Default is 0.9:0.5 ]
+
+            -c   Cutoff for branching
                  Format is <cutoff>, where:
-                   - <cutoff> is the threshold of the hierarchical clustering distance
-                 [ Default is 0.80 ]
+                   - <cutoff> is the distance threshold for branching the hierarchical clustering solution
+                 If no -c option is specified, srnap calculates the optimal cutoff
+                 [ No default value ]
+
+            -x   Distance file
+                 Format is <distance_file>, where:
+                   - <distance_file> is the file with pairwise distances between profiles
+                 When -x option is specified, distances are not calculated and directly taken from the provided file
+                 [ No default value ]
 
 **Output** :
 
-  output_folder/crosscorr.dat    : List of cross correlation coefficients between pairs of profiles
+  output_folder/crosscorr.dat    : List of distances between pairs of profiles (only if no distance file is provided)
 
   output_folder/clusters.neWick  : List of clustered profiles
 
@@ -116,6 +129,6 @@ The srnap subcommands include:
 
 **Example** :
 
-    srnap annotate -a hsap_micrornas.bed -c 0.95 profiles.dat output_dir
-    srnap annotate -a hsap_micrornas.bed -x hsap:hsap_profiles.dat profiles.dat output_dir
+    srnap annotate -a hsap_micrornas.bed profiles.dat output_dir
+    srnap annotate -a hsap_micrornas.bed -x crosscor.dat profiles.dat output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
