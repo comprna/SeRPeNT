@@ -115,6 +115,11 @@
 #define ERR_INVALID_c_VALUE "Invalid argument for option -c"
 
 /*
+ * ERROR : Invalid argument for -d option
+ */
+#define ERR_INVALID_d_VALUE "Invalid argument for option -d"
+
+/*
  * ERROR : Invalid argument for -o option
  */
 #define ERR_INVALID_o_VALUE "Invalid argument for option -o"

@@ -84,13 +84,13 @@ int parse_additional_profiles_parameters(char* option, char** error_message, arg
   char* token;
   
   if ((token = strtok(option, ":")) == NULL) {
-    *error_message = ERR_INVALID_x_VALUE;
+    *error_message = ERR_INVALID_d_VALUE;
     return(-1);
   }
   strncpy(arguments->species, token, MAX_FEATURE);
 
   if ((token = strtok(NULL, ":")) == NULL) {
-    *error_message = ERR_INVALID_x_VALUE;
+    *error_message = ERR_INVALID_d_VALUE;
     return(-1);
   }
   strncpy(arguments->additional_profiles_f_path, token, MAX_PATH);
