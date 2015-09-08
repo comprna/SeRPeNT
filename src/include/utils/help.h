@@ -7,8 +7,8 @@ The srnap subcommands include:\n\n\
    profiles    ncRNA discovery and profiling from small RNA-Seq data\n\
    annotate    ncRNA clustering, classification and annotation from profile data\n\n\
 [ General help ]\n\
-   -h, --help     Print this help menu\n\
-   -v, --version  What version of srnap are you using?"
+   -h          Print this help menu\n\
+   -v          What version of srnap are you using?"
 
 #define PROFILES_HELP_MSG "Tool      : profiles\n\n\
 Summary   : ncRNA discovery and profiling from small RNA-Seq data\n\n\

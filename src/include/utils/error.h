@@ -4,15 +4,15 @@
 /*
  * ERROR : Bad syntax
  */
-#define ERR_HELP_MSG "Please type <srnap -h> or <srnap --help> for help"
+#define ERR_HELP_MSG "Please type <srnap -h> for help"
 /*
  * ERROR : profiles - bad syntax
  */
-#define ERR_PROFILES_HELP_MSG "Please type <srnap profiles -h> or <srnap profiles --help> for help"
+#define ERR_PROFILES_HELP_MSG "Please type <srnap profiles -h> for help"
 /*
  * ERROR : clusters - bad syntax
  */
-#define ERR_ANNOTATE_HELP_MSG "Please type <srnap annotate -h> or <srnap annotate --help> for help"
+#define ERR_ANNOTATE_HELP_MSG "Please type <srnap annotate -h> for help"
 
 /*
  * ERROR : BED Format
