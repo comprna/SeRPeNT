@@ -14,15 +14,18 @@ int annotate_sc(int argc,  char **argv)
   int result;                                            // Result of any operation
   char* error_message;                                   // Error message to display in case of abnormal termination
   int nprofiles;                                         // Total number of profiles
+  int naprofiles;                                        // Total number of additional profiles
   int nclusters;                                         // Total number of clusters
   double** xcorr;                                        // 2-dimensional matrix containing correlations between profiles
-  double** xcorr_clone;                                  // Clone of xcorr above
+  double** xspeciescorr;                                 // 2-dimensional matrix containing correlations between intra-species profiles
   int i, j, index;                                       // Multi-purpose indexes
   profile_struct_annotation* profiles;                   // Array of profiles
+  profile_struct_annotation* additional_profiles;        // Array of additional profiles
   map_struct map;                                        // Profile map
   hcnode_struct *hc;                                     // Hierarchical clustering
   char categories[2][6] = {"NOVEL\0", "KNOWN\0"};        // Array for printing category
   char strands[2][2] = {"+\0", "-\0"};                   // Array for printing strand
+  double cutoff;                                         // Branching calculated cutoff value
 
   // Initialize options with default values. Parse command line.
   // Exit if command is not well-formed.
@@ -86,7 +89,7 @@ int annotate_sc(int argc,  char **argv)
       fprintf(stderr, "%s - %s\n", ERR_PROFILE_F_NOT_READABLE, arguments.additional_profiles_f_path);
       return(1);
     }
-    nprofiles += wcl(additional_profiles_file);
+    naprofiles = wcl(additional_profiles_file);
     fclose(additional_profiles_file);
   }
 
@@ -114,18 +117,21 @@ int annotate_sc(int argc,  char **argv)
   }
 
   // Check if additional profile file is provided.
+  // Allocate memory for additional profiles
   // Open additional profiles file for reading and load them into memory.
   // Exit if profiles file does not exist, is not readable or is ill-formatted.
   if (arguments.additional_profiles) {
+    additional_profiles = (profile_struct_annotation*) malloc(naprofiles * sizeof(profile_struct_annotation));
+    index = 0;
     fprintf(stderr, "[LOG] LOADING ADDITIONAL PROFILES FROM %s\n", arguments.species);
     additional_profiles_file = fopen(arguments.additional_profiles_f_path, "r");
     if (!additional_profiles_file) {
       fprintf(stderr, "%s - %s\n", ERR_PROFILE_F_NOT_READABLE, arguments.additional_profiles_f_path);
       return(1);
     }
-    while((result = next_additional_profile(additional_profiles_file, &profiles[index++], arguments.species) > 0)) {
+    while((result = next_additional_profile(additional_profiles_file, &additional_profiles[index++], arguments.species) > 0)) {
       if (arguments.annotation)
-        map_add_profile(&map, &profiles[index - 1]);
+        map_add_profile(&map, &additional_profiles[index - 1]);
     }
     if (result < 0) {
       fprintf(stderr, "%s - %s\n", ERR_PROFILE_F_NOT_READABLE, arguments.additional_profiles_f_path);
@@ -134,7 +140,8 @@ int annotate_sc(int argc,  char **argv)
   }
 
   // Check if annotation files are provided
-  // Read annotation files and annotate profiles
+  // Read annotation files and annotate profiles if no additional profiles provided
+  // Read annotation files and annotate additional profiles if additional profiles provided
   if (arguments.annotation) {
     feature_struct feature;
 
@@ -163,18 +170,23 @@ int annotate_sc(int argc,  char **argv)
 
   // Allocate memory for correlation
   xcorr = (double**) malloc(nprofiles * sizeof(double*));
-  xcorr_clone = (double**) malloc(nprofiles * sizeof(double*));
   for (i = 0; i < nprofiles; i++) {
     xcorr[i] = (double*) malloc(nprofiles * sizeof(double));
-    xcorr_clone[i] = (double*) malloc(nprofiles * sizeof(double));
     profiles[i].anscore = 0;
   }
 
-  // Read correlations file and store
+  // Allocate memory for cross-species correlations if additional profiles provided
+  if (arguments.additional_profiles) {
+    xspeciescorr = (double**) malloc(nprofiles * sizeof(double*));
+    for (i = 0; i < nprofiles; i++)
+      xspeciescorr[i] = (double*) malloc(naprofiles * sizeof(double));
+  }
+
+  // Read correlations file and store data
   if (arguments.correlations) {
     double score;
 
-    fprintf(stderr, "[LOG] LOADING CORRELATIONS\n");
+    fprintf(stderr, "[LOG] LOADING DISTANCE SCORES\n");
     correlations_file = fopen(arguments.correlations_f_path, "r");
     if (!correlations_file) {
       fprintf(stderr, "%s - %s\n", ERR_CORRELATIONS_F_NOT_READABLE, arguments.correlations_f_path);
@@ -182,8 +194,8 @@ int annotate_sc(int argc,  char **argv)
     }
     i = 0; j = i + 1;
     while((result = next_correlation(correlations_file, &score) > 0)) {
-      xcorr[i][j] = score; xcorr_clone[i][j] = score;
-      xcorr[j][i] = score; xcorr_clone[j][i] = score;
+      xcorr[i][j] = score;
+      xcorr[j][i] = score;
       j++;
       if (j == nprofiles) {
         xcorr[i][i] = 0;
@@ -197,29 +209,24 @@ int annotate_sc(int argc,  char **argv)
     }
 
     xcorr[nprofiles - 1][nprofiles - 1] = 0.0f;
-    xcorr_clone[nprofiles - 1][nprofiles - 1] = 0.0f;
 
     fclose(correlations_file);
   }
 
   // Calculate xcorrelations
   else {
-    fprintf(stderr, "[LOG] CALCULATING CROSS-CORRELATION SCORES AND DISTANCES\n");
+    fprintf(stderr, "[LOG] CALCULATING DISTANCE SCORES\n");
     for (i = 0; i < (nprofiles - 1); i++) {
       xcorr[i][i] = (double) 0.0f;
-      xcorr_clone[i][i] = (double) 0.0f;
       for (j = i + 1; j < nprofiles; j++) {
         double corr = xdtw(&profiles[i], &profiles[j]);
         if (corr < 0)
           corr = 0;
         xcorr[i][j] = 1 - corr;
         xcorr[j][i] = 1 - corr;
-        xcorr_clone[i][j] = 1 - corr;
-        xcorr_clone[j][i] = 1 - corr;
       }
     }
     xcorr[nprofiles - 1][nprofiles - 1] = 0.0f;
-    xcorr_clone[nprofiles - 1][nprofiles - 1] = 0.0f;
 
     // Print xcorrelations
     char *xcorr_file_name = malloc((MAX_PATH + strlen(CROSSCOR_SUFFIX) + 2) * sizeof(char));
@@ -260,7 +267,7 @@ int annotate_sc(int argc,  char **argv)
   // Branch the tree according the cutoff
   if (arguments.cluster_cutoff < 0) {
     double score = -1;
-    double cutoff = 0;
+    cutoff = 0;
     int step;
     for (step = 100; step >= 0; step--) {
       for (i = 0; i < (nprofiles - 1); i++) hc[i].visited = 0;
@@ -278,11 +285,26 @@ int annotate_sc(int argc,  char **argv)
     nclusters = hc_branch(hc, nprofiles, profiles, cutoff);
     fprintf(stderr, "[LOG]   Estimated cutoff is %f\n", cutoff);
   }
-  else
+  else {
     nclusters = hc_branch(hc, nprofiles, profiles, arguments.cluster_cutoff);
+    cutoff = arguments.cluster_cutoff;
+  }
 
-  // Annotate unknown profiles
-  if (arguments.annotation) {
+  // Calculate cross-species correlations if additional profiles provided
+  if (arguments.additional_profiles) {
+    fprintf(stderr, "[LOG] CALCULATING DISTANCE SCORES BETWEEN SPECIES\n");
+    for (i = 0; i < nprofiles; i++) {
+      for (j = 0; j < naprofiles; j++) {
+        double corr = xdtw(&profiles[i], &additional_profiles[j]);
+        if (corr < 0)
+          corr = 0;
+        xspeciescorr[i][j] = 1 - corr;
+      }
+    }
+  }
+
+  // Annotate unknown profiles if no additional profiles provided
+  if (arguments.annotation && !arguments.additional_profiles) {
     fprintf(stderr, "[LOG] ANNOTATING UNKNOWN PROFILES\n");
 
     annotation_struct** matrix = (annotation_struct**) malloc(sizeof(annotation_struct*) * nprofiles);
@@ -302,13 +324,32 @@ int annotate_sc(int argc,  char **argv)
     free(matrix);
   }
 
+  // Annotate unknown profiles if additional profiles provided
+  if (arguments.annotation && arguments.additional_profiles) {
+    fprintf(stderr, "[LOG] ANNOTATING UNKNOWN PROFILES\n");
+
+    annotation_struct** matrix = (annotation_struct**) malloc(sizeof(annotation_struct*) * nprofiles);
+
+    for (i = 0; i < nprofiles; i++) {
+      matrix[i] = (annotation_struct*) malloc(sizeof(annotation_struct) * naprofiles);
+      for (j = 0; j < naprofiles; j++) {
+        matrix[i][j].score = xspeciescorr[i][j];
+        matrix[i][j].index_i = i;
+        matrix[i][j].index_j = j;
+      }
+    }
+
+    xspeciescorr_annotate(matrix, nprofiles, profiles, naprofiles, additional_profiles, cutoff);
+
+    for (i = 0; i < nprofiles; i++) free(matrix[i]);
+    free(matrix);
+  }
+
   // Print annotated profiles in BED format
   if (arguments.annotation) {
     for (i = 0; i < nprofiles; i++) {
-      if ((!arguments.additional_profiles) || ((arguments.additional_profiles) && (strcmp(profiles[i].species, "\0") != 0))) {
-        profile_struct_annotation p = profiles[i];
-        fprintf(annotation_o_file, "%s\t%d\t%d\t%s\t%f\t%s\t%s\t%d\n", p.chromosome, p.start, p.end, p.annotation, p.anscore, strands[p.strand], categories[p.category], p.cluster);
-      }
+      profile_struct_annotation p = profiles[i];
+      fprintf(annotation_o_file, "%s\t%d\t%d\t%s\t%f\t%s\t%s\t%d\n", p.chromosome, p.start, p.end, p.annotation, p.anscore, strands[p.strand], categories[p.category], p.cluster);
     }
   }
 
@@ -316,18 +357,22 @@ int annotate_sc(int argc,  char **argv)
   for (i = 0; i < nprofiles; i++)
     free(profiles[i].profile);
   free(profiles);
-  for (i = 0; i < nprofiles; i++) {
+  for (i = 0; i < nprofiles; i++)
     free(xcorr[i]);
-    free(xcorr_clone[i]);
-  }
   free(xcorr);
-  free(xcorr_clone);
   free(hc);
   fclose(clusters_file);
   fclose(profiles_file);
-  if (arguments.additional_profiles)
-    fclose(additional_profiles_file);
   if (arguments.annotation)
     fclose(annotation_o_file);
+  if (arguments.additional_profiles) {
+    for (i = 0; i < naprofiles; i++)
+      free(additional_profiles[i].profile);
+    free(additional_profiles);
+    for (i = 0; i < nprofiles; i++)
+      free(xspeciescorr[i]);
+    free(xspeciescorr);
+    fclose(additional_profiles_file);
+  }
   return(0);
 }

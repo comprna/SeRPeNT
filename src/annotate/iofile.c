@@ -126,6 +126,7 @@ int next_profile(FILE* fp, profile_struct_annotation* profile)
   }
 
   profile->additional = 0;
+  strcpy(profile->species, "\0");
 
   profile->anscore = INT_MIN;
   profile->cluster = -1;
@@ -256,6 +257,8 @@ int next_additional_profile(FILE* fp, profile_struct_annotation* profile, char* 
   profile->mean = gsl_stats_mean(profile->profile, 1, profile->length);
   profile->variance = gsl_stats_variance(profile->profile, 1, profile->length);
   gnoise(profile->profile, profile->mean, profile->variance, profile->noise, MAX_PROFILE_LENGTH);
+  strncpy(profile->annotation, "unknown", MAX_FEATURE);
+  strncpy(profile->tmp_annotation, "unknown", MAX_FEATURE);
   profile->category = NOVEL;
 
   free(line);
