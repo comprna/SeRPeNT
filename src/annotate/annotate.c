@@ -22,7 +22,7 @@ int annotate_sc(int argc,  char **argv)
   profile_struct_annotation* profiles;                   // Array of profiles
   profile_struct_annotation* additional_profiles;        // Array of additional profiles
   map_struct map;                                        // Profile map
-  hcnode_struct *hc;                                     // Hierarchical clustering
+  //hcnode_struct *hc;                                     // Hierarchical clustering
   char categories[2][6] = {"NOVEL\0", "KNOWN\0"};        // Array for printing category
   char strands[2][2] = {"+\0", "-\0"};                   // Array for printing strand
   double cutoff;                                         // Branching calculated cutoff value
@@ -260,6 +260,7 @@ int annotate_sc(int argc,  char **argv)
 
   // Compute MLINK hierarchical clustering
   // Print in neWick format
+/*
   fprintf(stderr, "[LOG] PERFORMING HIERARCHICAL CLUSTERING\n");
   hc = hc_cluster(xcorr, nprofiles);
   hc_print(clusters_file, hc, nprofiles, profiles);
@@ -289,6 +290,23 @@ int annotate_sc(int argc,  char **argv)
     nclusters = hc_branch(hc, nprofiles, profiles, arguments.cluster_cutoff);
     cutoff = arguments.cluster_cutoff;
   }
+*/
+
+  // Clustering by dpClust
+  fprintf(stderr, "[LOG] PERFORMING DP-CLUSTERING\n");
+  double score = -1;
+  int step;
+  int fnc;
+  for (step = 2; step <= nprofiles * 0.75; step++) {
+    fprintf(stderr, "      Loop %d\n", step);
+    nclusters = dclust(xcorr, nprofiles, step, profiles);
+    double tmpscore = hc_eval(nprofiles, profiles);
+    if (tmpscore > score) { 
+      score = tmpscore;
+      fnc = step;
+    }
+  }
+  nclusters = dclust(xcorr, nprofiles, fnc, profiles);
 
   // Calculate cross-species correlations if additional profiles provided
   if (arguments.additional_profiles) {
@@ -318,7 +336,7 @@ int annotate_sc(int argc,  char **argv)
       }
     }
 
-    xcorr_annotate(matrix, nprofiles, profiles);
+    //xcorr_annotate(matrix, nprofiles, profiles);
 
     for (i = 0; i < nprofiles; i++) free(matrix[i]);
     free(matrix);
@@ -338,6 +356,12 @@ int annotate_sc(int argc,  char **argv)
         matrix[i][j].index_j = j;
       }
     }
+
+    // TODO
+    if (arguments.cluster_cutoff < 0)
+      cutoff = 0.01;
+    else
+      cutoff = arguments.cluster_cutoff;
 
     xspeciescorr_annotate(matrix, nprofiles, profiles, naprofiles, additional_profiles, cutoff);
 
@@ -360,7 +384,7 @@ int annotate_sc(int argc,  char **argv)
   for (i = 0; i < nprofiles; i++)
     free(xcorr[i]);
   free(xcorr);
-  free(hc);
+  //free(hc);
   fclose(clusters_file);
   fclose(profiles_file);
   if (arguments.annotation)

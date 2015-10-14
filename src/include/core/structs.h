@@ -212,4 +212,12 @@ typedef struct {
   int index_i;
   int index_j;
 } annotation_struct;
+
+/*
+ * Struct for dp clustering
+ */
+typedef struct {
+  double value;
+  int index;
+} rho_struct;
 #endif
