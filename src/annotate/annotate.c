@@ -258,47 +258,12 @@ int annotate_sc(int argc,  char **argv)
     fclose(xcorr_file);
   }
 
-  // Compute MLINK hierarchical clustering
-  // Print in neWick format
-/*
-  fprintf(stderr, "[LOG] PERFORMING HIERARCHICAL CLUSTERING\n");
-  hc = hc_cluster(xcorr, nprofiles);
-  hc_print(clusters_file, hc, nprofiles, profiles);
-
-  // Branch the tree according the cutoff
-  if (arguments.cluster_cutoff < 0) {
-    double score = -1;
-    cutoff = 0;
-    int step;
-    for (step = 100; step >= 0; step--) {
-      for (i = 0; i < (nprofiles - 1); i++) hc[i].visited = 0;
-      for (i = 0; i < nprofiles; i++) profiles[i].cluster = -1;
-      double tmpcutoff = ((double)1)/((double)step);
-      hc_branch(hc, nprofiles, profiles, tmpcutoff);
-      double tmpscore = hc_eval(nprofiles, profiles);
-      if (tmpscore > score) {
-        score = tmpscore;
-        cutoff = tmpcutoff;
-      } 
-    }
-    for (i = 0; i < nprofiles; i++) profiles[i].cluster = -1;
-    for (i = 0; i < (nprofiles - 1); i++) hc[i].visited = 0;
-    nclusters = hc_branch(hc, nprofiles, profiles, cutoff);
-    fprintf(stderr, "[LOG]   Estimated cutoff is %f\n", cutoff);
-  }
-  else {
-    nclusters = hc_branch(hc, nprofiles, profiles, arguments.cluster_cutoff);
-    cutoff = arguments.cluster_cutoff;
-  }
-*/
-
   // Clustering by dpClust
   fprintf(stderr, "[LOG] PERFORMING DP-CLUSTERING\n");
   double score = -1;
   int step;
   int fnc;
   for (step = 2; step <= nprofiles * 0.75; step++) {
-    fprintf(stderr, "      Loop %d\n", step);
     nclusters = dclust(xcorr, nprofiles, step, profiles);
     double tmpscore = hc_eval(nprofiles, profiles);
     if (tmpscore > score) { 
@@ -323,23 +288,7 @@ int annotate_sc(int argc,  char **argv)
 
   // Annotate unknown profiles if no additional profiles provided
   if (arguments.annotation && !arguments.additional_profiles) {
-    fprintf(stderr, "[LOG] ANNOTATING UNKNOWN PROFILES\n");
-
-    annotation_struct** matrix = (annotation_struct**) malloc(sizeof(annotation_struct*) * nprofiles);
-
-    for (i = 0; i < nprofiles; i++) {
-      matrix[i] = (annotation_struct*) malloc(sizeof(annotation_struct) * nprofiles);
-      for (j = 0; j < nprofiles; j++) {
-        matrix[i][j].score = xcorr[i][j];
-        matrix[i][j].index_i = i;
-        matrix[i][j].index_j = j;
-      }
-    }
-
-    //xcorr_annotate(matrix, nprofiles, profiles);
-
-    for (i = 0; i < nprofiles; i++) free(matrix[i]);
-    free(matrix);
+    cluster_annotate(nclusters, nprofiles, profiles);
   }
 
   // Annotate unknown profiles if additional profiles provided
