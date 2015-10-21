@@ -22,7 +22,6 @@ int annotate_sc(int argc,  char **argv)
   profile_struct_annotation* profiles;                   // Array of profiles
   profile_struct_annotation* additional_profiles;        // Array of additional profiles
   map_struct map;                                        // Profile map
-  //hcnode_struct *hc;                                     // Hierarchical clustering
   char categories[2][6] = {"NOVEL\0", "KNOWN\0"};        // Array for printing category
   char strands[2][2] = {"+\0", "-\0"};                   // Array for printing strand
   double cutoff;                                         // Branching calculated cutoff value
@@ -333,7 +332,6 @@ int annotate_sc(int argc,  char **argv)
   for (i = 0; i < nprofiles; i++)
     free(xcorr[i]);
   free(xcorr);
-  //free(hc);
   fclose(clusters_file);
   fclose(profiles_file);
   if (arguments.annotation)
