@@ -130,7 +130,10 @@ void cluster_annotate(int nclusters, int nprofiles, profile_struct_annotation* p
 
     for (j = 0; j < profiles_per_cluster[i]; j++) {
       int pindex = profiles_index[i][j];
-      if (strcmp(profiles[pindex].annotation, "unknown") == 0) strncpy(profiles[pindex].annotation, class, MAX_FEATURE);
+      if (strcmp(profiles[pindex].annotation, "unknown") == 0) {
+        if (profiles[pindex].halo == 0)
+          strncpy(profiles[pindex].annotation, class, MAX_FEATURE);
+      }
     }
 
     free(profiles_per_class);

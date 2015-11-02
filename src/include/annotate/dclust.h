@@ -10,12 +10,14 @@
  *   Distance matrix
  * @arg int n
  *   Number of elements in the distance matrix
- * @arg int k
- *   Number of clusters. If k = 0 then number of clusters is computed.
  * @arg profile_struct_annotation* profiles
  *   An array of profiles
+ * @arg double cutoff
+ *   Distance cutoff (dc)
+ * @arg int gaussian
+ *   0 if no gaussian kernel for density calculation. 1 otherwise.
  *
  * @return
  *   Number of clusters
  */
-int dclust(double** dist, int n, int k, profile_struct_annotation* profiles);
+int dclust(double** dist, int n, profile_struct_annotation* profiles, double cutoff, int gaussian);

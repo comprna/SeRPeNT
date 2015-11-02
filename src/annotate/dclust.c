@@ -22,42 +22,93 @@ int cmpsm (const void *x, const void *y)
   rho_struct yy = *(rho_struct*) y;
 
   if (xx.value < yy.value) return 1;
-  if (xx.value > yy.value) return 0;
+  if (xx.value > yy.value) return -1;
   return 0;
 }
 
+
+/*
+ * dcoptimize
+ *
+ * @see include/annotate/dclust.h
+ */
+double dcoptimize(double** dist, double* allds, int n)
+{
+  double dc, z, h, hmin;
+  int i, j, k;
+  double* potentials;
+
+  potentials = (double*) malloc(n * sizeof(double));
+  hmin = DBL_MAX;
+
+  for (i = 0; i < (n * (n - 1) / 2); i++) {
+    double ifactor = allds[i];
+
+    for (k = 0; k < n; k++) potentials[k] = 0.0f;
+
+    // Calculate potential for each point
+    for(k = 0; k < n; k++) {
+      for(j = k + 1; j < n; j++) {
+        double sq = -(dist[k][j] / (double)ifactor) * (dist[k][j] / (double)ifactor);
+        double expsq = exp(sq);
+        potentials[k] += expsq;
+        potentials[j] += expsq;
+      }
+    }
+
+    // Calculate normalization factor
+    z = 0;
+    for (k = 0; k < n; k++)
+      z += potentials[k];
+
+    // Calculate entropy
+    h = 0;
+    for (k = 0; k < n; k++) {
+      double a = potentials[k] / z;
+      double b = log(a);
+      h += a*b;
+    }
+    h = h * (-1);
+
+    // Store dc and hmin
+    if (h < hmin) {
+      hmin = h;
+      dc = ifactor;
+    }
+  }
+
+  free(potentials);
+
+  return((3/sqrt(2)) * dc);
+}
 
 /*
  * dclust
  *
  * @see include/annotate/dclust.h
  */
-int dclust(double** dist, int n, int k, profile_struct_annotation* profiles)
+int dclust(double** dist, int n, profile_struct_annotation* profiles, double cutoff, int gaussian)
 {
-  int *cl, *icl, *halo, *cds, *ordrho, *nneigh, *sites;
-  double *allds, *rho, *delta, *sortrho, *rhotdelta, *bord_rho;
-  int i, j, counter, pos, nclust, idx;
-  double dc, maxd, maxdelta, maxrho, rhotdeltamin, rho_aver;
+  int *cl, *halo;
+  double *allds, *rho, *delta, *sortrho, *sortdelta, *bord_rho;
+  int i, j, counter, nclust;
+  double dc, maxd, rhothreshold, deltathreshold;
   rho_struct *strho;
 
   // Initialize structures
   cl = (int*) malloc(sizeof(int) * n);
-  icl = (int*) malloc(sizeof(int) * n);
   halo = (int*) malloc(sizeof(int) * n); 
-  cds = (int*) malloc(sizeof(int) * k);
   allds = (double*) malloc(sizeof(double) * (n * (n - 1) / 2));
   rho = (double*) malloc(sizeof(double) * n);
   delta = (double*) malloc(sizeof(double) * n);
   sortrho = (double*) malloc(sizeof(double) * n);
-  ordrho = (int*) malloc(sizeof(int) * n);
+  sortdelta = (double*) malloc(sizeof(double) * n);
   strho = (rho_struct*) malloc(sizeof(rho_struct) * n);
-  nneigh = (int*) malloc(sizeof(int) * n);
-  rhotdelta = (double*) malloc(sizeof(double) * n);
-  sites =  (int*) malloc(sizeof(int) * n);
-  bord_rho = (double*) malloc(sizeof(double) * n);
-  for (i = 0; i < n; i++) rho[i] = 0.0f;
 
-  // Convert dissimilarity matrix into a vector
+  // Calculate cutoff distance (dc)
+  //   Convert dissimilarity matrix into a vector
+  //   Sort dissimilarity vector ascendently
+  //   dc = distance at position 2%
   counter = 0;
   for (i = 0; i < n; i++) {
     for(j = i + 1; j < n; j++) {
@@ -65,191 +116,140 @@ int dclust(double** dist, int n, int k, profile_struct_annotation* profiles)
       counter++;
     }
   }
-
-  // STEP
   qsort(allds, n * (n - 1) / 2, sizeof(double), cmpd);
-  pos = (int) round(((double) counter) * 2.0f / 100.0f) - 1;
-  dc = allds[pos];
+  maxd = allds[counter - 1];
 
-  // STEP
-  for(i = 0; i < n; i++) {
-    for(j = i + 1; j < n; j++) {
-      double sq = -(dist[i][j] / (double)dc) * (dist[i][j] / (double)dc);
-      double expsq = exp(sq);
-      rho[i] += expsq;
-      rho[j] += expsq;
-    }
-  }
-
-  /* METHOD B
-  for(i = 0; i < n; i++) {
-    for(j = i + 1; j < n; j++) {
-      if(dist[i][j] < dc) {
-        rho[i]++;
-        rho[j]++;
-      }
-    }
-  } END METHOD B */
-
-  // STEP
-  for (i = 0; i < n; i++){
-    strho[i].value = rho[i];
-    sortrho[i] = rho[i];
-    strho[i].index = i;
-    ordrho[i] = i;
-  }
-  qsort(strho, n, sizeof(rho_struct), cmpsm);
-  for (i = 0; i < n; i++) ordrho[i] = strho[i].index;
-
-  // STEP
-  maxd = allds[counter-1];
-  delta[ordrho[0]] = -1;
-  nneigh[ordrho[0]] = 0;
-  for(i = 1; i < n; i++) {
-    delta[ordrho[i]] = maxd;
-    for(j = 0; j < i; j++) {
-      if(dist[ordrho[i]][ordrho[j]] < delta[ordrho[i]]) {
-        delta[ordrho[i]] = dist[ordrho[i]][ordrho[j]];
-        nneigh[ordrho[i]] = ordrho[j];
+  // Optimize dc
+  if (cutoff > 0)
+    dc = cutoff;
+  else
+    dc = dcoptimize(dist, allds, n);
+fprintf(stderr, "%f\n", dc);
+  // Calculate RHO[i] per point using gaussian kernel
+  //   RHO[i] = sum {exp(-(dist(i,j)/dc)^2)}
+  if (gaussian) {
+    for(i = 0; i < n; i++) {
+      for(j = i + 1; j < n; j++) {
+        double sq = -(dist[i][j] / (double)dc) * (dist[i][j] / (double)dc);
+        double expsq = exp(sq);
+        rho[i] += expsq;
+        rho[j] += expsq;
       }
     }
   }
 
-  delta[ordrho[0]] = gsl_stats_max (delta, 1, n); // delta[ordrho[0]] = *max_element(delta.begin(),delta.end());
-  maxdelta = gsl_stats_max (delta, 1, n); // maxdelta = *max_element(delta.begin(),delta.end());
-  maxrho = gsl_stats_max (rho,  1, n); // maxrho = *max_element(rho.begin(),rho.end());
-
-  // STEP
-  for(i = 0; i < n; i++) {
-    rhotdelta[i] = sqrt(pow((delta[i]/maxdelta), 2) + pow((rho[i] / maxrho), 2));
-    strho[i].value = rhotdelta[i];
-    sites[i] = i;
-    strho[i].index = i;
-  }
-  qsort(strho, n, sizeof(rho_struct), cmpsm); // sort(sites.begin(),sites.end(),mtd(rhotdelta));
-  for (i = 0; i < n; i++) sites[i] = strho[i].index;
-
-  /* CLUSTER NUMBER CALCULATION NOT NEEDED */
-  // If k = 0, a way to calculate number of clusters
-  if (k == 0) {
-    double sum = 0;
-    for (idx = 0; idx < n; idx++) sum += rhotdelta[idx]; //accumulate(rhotdelta.begin(), rhotdelta.end(), 0.0);
-    double mean = sum / n; //rhotdelta.size();
-
-    // Returns the result of accumulating init with the inner products of the pairs formed by the elements of two ranges starting at first1 and first2
-    double sq_sum = 0; //inner_prodiuct(rhotdelta.begin(), rhotdelta.end(), rhotdelta.begin(), 0.0);
-    for (idx = 0; idx < n; idx++) sq_sum += rhotdelta[idx] * rhotdelta[idx];
-    
-    double stdev = (double) sqrt(sq_sum / n - mean * mean); //(double) sqrt(sq_sum / rhotdelta.size() - mean * mean);
-    double stdevby10 = stdev / 10.0;
-
-    rhotdeltamin = gsl_stats_max(rhotdelta, 1, n) - 0.000001;;//*max_element(rhotdelta.begin(),rhotdelta.end()) - 0.000001;
-
-    double rhotdeltamininit = rhotdeltamin;
-    int kk = 1;
-    int exit = 0; //bool exit = false;
-
-    while(!exit) {
-      int pkk = kk;
-      rhotdeltamin -= stdevby10;
-      while(rhotdelta[sites[kk]] > rhotdeltamin) kk++;
-
-      if(kk-pkk > 5*pkk) { // Exit if numclusters increases 5 times the previous amount
-        rhotdeltamin += stdev;
-        exit = 1;//exit = true;
-      }
-      else {
-        if((kk-pkk == 0) && (k > 1)) // Exit if no new clusters and already more than 1
-          exit = 1;//exit = true;
-      }
-
-      if(rhotdeltamin < rhotdeltamininit - 2 * stdev) // Exit if we are getting close to the mean
-        exit = 1;//exit = true;
-    }
-  }
-  else 
-    rhotdeltamin = rhotdelta[sites[k]];
-
-  // STEP
-  nclust = 0;
-  for(i = 0; i < n; i++)
-    cl[i] = -1;  // push_back : dds a new element at the end of the vector, after its current last element
-
-  idx = 0;
-  for(i = 0; i < n; i++) {
-    if(rhotdelta[i] > rhotdeltamin) {
-      cl[i] = nclust;
-      icl[idx++] = i;
-      nclust = nclust + 1; 
-    }
-  }
-
-  // Assignation
-  for(i = 0; i < n; i++)
-    if(cl[ordrho[i]] == -1)
-      cl[ordrho[i]] = cl[nneigh[ordrho[i]]];//cl[ordrho[i]] = cl[nneigh[ordrho[i]]];
-
-  // Halo
-  idx = 0;
-  for(i = 0; i < n; i++)
-    halo[idx++] = cl[i];
-
-  rho_aver = 0.0;
-  if (nclust > 1) {
-    for(i = 0;i < nclust; i++)
-      bord_rho[i] = 0.;
-
-    for(i = 0; i < n-1; i++) {
-      for(j = i+1; j < n; j++) {
-        if ((cl[i] != cl[j]) && (dist[i][j] <= dc)) {
-          rho_aver=(rho[i]+rho[j]) / 2.;
-          if (rho_aver > bord_rho[cl[i]])
-            bord_rho[cl[i]]=rho_aver;
-          if (rho_aver > bord_rho[cl[j]])
-            bord_rho[cl[j]]=rho_aver;
+  // Calculate RHO per point
+  //   RHO[i] = number of points j that satisfy dist(i,j) < dc
+  if (!gaussian) {
+    for(i = 0; i < n; i++) {
+      for(j = i + 1; j < n; j++) {
+        if(dist[i][j] < dc) {
+          rho[i]++;
+          rho[j]++;
         }
       }
     }
+  }
 
-    for(i = 0; i < n; i++) {
-      if (rho[i] < bord_rho[cl[i]]) {
-        halo[i]=-1;
+  // Calculate DELTA per point
+  //   DELTA[i] = minimum {dist(i,j) if RHO[j] > RHO[i]}
+  for (i = 0; i < n; i++) {
+    delta[i] = maxd;
+    for (j = 0; j < n; j++) {
+      if ((j != i) && (rho[i] < rho[j]) && (delta[i] > dist[i][j]))
+        delta[i] = dist[i][j];
+    }
+  }
+
+  // Calculation of RHO and DELTA threshold
+  //   deltathreshold = 3rd quartile
+  //   rhothreshold = 1st quartile 
+  for (i = 0; i < n; i++) {
+    sortrho[i] = rho[i];
+    sortdelta[i] = delta[i];
+  }
+  qsort(sortrho, n, sizeof(double), cmpd);
+  qsort(sortdelta, n, sizeof(double), cmpd);
+  rhothreshold = gsl_stats_quantile_from_sorted_data(sortrho, 1, n, 0.25);
+  deltathreshold = gsl_stats_quantile_from_sorted_data(sortdelta, 1, n, 0.75);
+
+  // Identification of cluster centers
+  //   i is a center <=> RHO[i] > rhothreshold and DELTA[i] > deltathreshold
+   nclust = 0;
+  for (i = 0; i < n; i++) {
+    cl[i] = 0;
+    if (rho[i] > rhothreshold && delta[i] > deltathreshold)
+      cl[i] = ++nclust;
+  }
+
+  // Order points according RHO values in ORDRHO descendently
+  for (i = 0; i < n; i++) {
+    strho[i].value = rho[i];
+    strho[i].index = i;
+  }
+  qsort(strho, n, sizeof(rho_struct), cmpsm);
+
+  // Assign clusters
+  // Point is assigned to the same cluster as its nearest neighbor of higher density
+  for (i = 0; i < n; i++) {
+    int idxi = strho[i].index;
+    if (cl[idxi] == 0) {
+      double mindist = maxd;
+      int minidx = n;
+      for (j = 0; j < i; j++) {
+        int idxj = strho[j].index;
+        if ((rho[idxi] < rho[idxj]) && (dist[idxi][idxj] < mindist)) {
+          cl[idxi] = cl[idxj];
+          mindist = dist[idxi][idxj];
+          minidx = idxj;
+        }
+        else if ((rho[idxi] < rho[idxj]) && (dist[idxi][idxj] == mindist) && (idxj < minidx)) {
+          cl[idxi] = cl[idxj];
+          mindist = dist[idxi][idxj];
+          minidx = idxj;
+        }
       }
     }
   }
 
-  /* PRINT 
-  for(i = 0; i < nclust; i++) {
-    int nc = 0;
-    int nh = 0;
-    for(j = 0; j < n; j++) {
-      if (cl[j] == i)
-        nc = nc + 1;
-      if (halo[j]==i)
-        nh = nh + 1;
+  // Find border densities per cluster
+  bord_rho = (double*) malloc((nclust + 1) * sizeof(double));
+  for (i = 1; i <= nclust; i++) {
+    bord_rho[i] = 0;
+    for (j = 0; j < n; j++) {
+      if (cl[j] == i) {
+        int k;
+        for (k = 0; k < n; k++) {
+          if ((cl[k] != cl[j]) && (dist[j][k] <= dc) && (rho[j] > bord_rho[i]))
+            bord_rho[i] = rho[j];
+        }
+      }
     }
-    fprintf(stderr, "CLUSTER: %d CENTER: %d ELEMENTS: %d CORE: %d HALO: %d \n", i, icl[i], nc, nh, nc - nh);
   }
-  END PRINT */
 
-  for(i = 0; i < n; i++)
-    //fprintf(stderr, "%i %i %i\n", i, cl[i], halo[i]);
-    profiles[i].cluster = cl[i] + 1;
+  // Generate Halo
+  for (i = 0; i < n; i++) {
+    if (rho[i] >= bord_rho[cl[i]])
+      halo[i] = 0;
+    else
+      halo[i] = 1;
+  }
+
+  // Asign cluster number and halo to profiles
+  for(i = 0; i < n; i++) {
+    profiles[i].cluster = cl[i];
+    profiles[i].halo = halo[i];
+  }
 
   // Free structures and exit
   free(cl);
-  free(icl);
   free(halo);
-  free(cds);
   free(allds);
   free(rho);
-  free(delta);
   free(sortrho);
-  free(ordrho);
+  free(delta);
+  free(sortdelta);
   free(strho);
-  free(nneigh);
-  free(rhotdelta);
-  free(sites);
   free(bord_rho);
 
   return nclust;

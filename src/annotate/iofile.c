@@ -130,6 +130,7 @@ int next_profile(FILE* fp, profile_struct_annotation* profile)
 
   profile->anscore = INT_MIN;
   profile->cluster = -1;
+  profile->halo = 0;
 
   profile->profile = (double*) malloc((profile->end - profile->start + 1) * sizeof(double));
 
@@ -234,6 +235,7 @@ int next_additional_profile(FILE* fp, profile_struct_annotation* profile, char* 
 
   profile->anscore = INT_MIN;
   profile->cluster = -1;
+  profile->halo = 0;
 
   profile->profile = (double*) malloc((profile->end - profile->start + 1) * sizeof(double));
 

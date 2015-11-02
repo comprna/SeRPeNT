@@ -259,18 +259,7 @@ int annotate_sc(int argc,  char **argv)
 
   // Clustering by dpClust
   fprintf(stderr, "[LOG] PERFORMING DP-CLUSTERING\n");
-  double score = -1;
-  int step;
-  int fnc;
-  for (step = 2; step <= nprofiles * 0.75; step++) {
-    nclusters = dclust(xcorr, nprofiles, step, profiles);
-    double tmpscore = hc_eval(nprofiles, profiles);
-    if (tmpscore > score) { 
-      score = tmpscore;
-      fnc = step;
-    }
-  }
-  nclusters = dclust(xcorr, nprofiles, fnc, profiles);
+  nclusters = dclust(xcorr, nprofiles, profiles, -1, 0);
 
   // Calculate cross-species correlations if additional profiles provided
   if (arguments.additional_profiles) {
