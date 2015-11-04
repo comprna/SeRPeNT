@@ -32,39 +32,60 @@ int cmpsm (const void *x, const void *y)
  *
  * @see include/annotate/dclust.h
  */
-double dcoptimize(double** dist, double* allds, int n)
+double dcoptimize(double** dist, int n, double* max)
 {
-  double dc, z, h, hmin;
-  int i, j, k;
+  double dc, z, h, hmin, lower, upper, sigma;
+  double* allds;
+  int i, j, counter;
   double* potentials;
 
+  // Initialize variables
   potentials = (double*) malloc(n * sizeof(double));
+  allds = (double*) malloc(sizeof(double) * (n * (n - 1) / 2));
   hmin = DBL_MAX;
 
-  for (i = 0; i < (n * (n - 1) / 2); i++) {
-    double ifactor = allds[i];
+  // Convert dissimilarity matrix into a vector
+  // Sort dissimilarity vector ascendently
+  counter = 0;
+  for (i = 0; i < n; i++) {
+    for(j = i + 1; j < n; j++) {
+      allds[counter] = dist[i][j];
+      counter++;
+    }
+  }
+  qsort(allds, n * (n - 1) / 2, sizeof(double), cmpd);
+  *max = allds[counter - 1];
 
-    for (k = 0; k < n; k++) potentials[k] = 0.0f;
+  // Calculate lower and upper boundaries for sigma (impact factor)
+  //   lower : minimum distance > 0
+  //   upper : distance at 10 percentile
+  counter = 0;
+  while(allds[counter] == 0) counter++;
+  lower = allds[counter];
+  upper = gsl_stats_quantile_from_sorted_data(allds, 1, (n * (n - 1) / 2), 0.10);
+
+  // Calculate entropy for values of sigma between lower and upper in increments of 0.005
+  for (sigma = lower; sigma <= upper; sigma += 0.005f) {
 
     // Calculate potential for each point
-    for(k = 0; k < n; k++) {
-      for(j = k + 1; j < n; j++) {
-        double sq = -(dist[k][j] / (double)ifactor) * (dist[k][j] / (double)ifactor);
-        double expsq = exp(sq);
-        potentials[k] += expsq;
-        potentials[j] += expsq;
+    for(i = 0; i < n; i++) {
+      potentials[i] = 0.0f;
+      for(j = 0; j < n; j++) {
+        double sq = (dist[i][j] / sigma) * (dist[i][j] / sigma);
+        double expsq = exp(-sq);
+        if (j != i) potentials[i] += expsq;
       }
     }
 
-    // Calculate normalization factor
+    // Calculate Z (normalization factor)
     z = 0;
-    for (k = 0; k < n; k++)
-      z += potentials[k];
+    for (i = 0; i < n; i++)
+      z += potentials[i];
 
-    // Calculate entropy
+    // Calculate H (entropy)
     h = 0;
-    for (k = 0; k < n; k++) {
-      double a = potentials[k] / z;
+    for (i = 0; i < n; i++) {
+      double a = potentials[i] / z;
       double b = log(a);
       h += a*b;
     }
@@ -73,11 +94,12 @@ double dcoptimize(double** dist, double* allds, int n)
     // Store dc and hmin
     if (h < hmin) {
       hmin = h;
-      dc = ifactor;
+      dc = sigma;
     }
   }
 
   free(potentials);
+  free(allds);
 
   return((3/sqrt(2)) * dc);
 }
@@ -90,41 +112,27 @@ double dcoptimize(double** dist, double* allds, int n)
 int dclust(double** dist, int n, profile_struct_annotation* profiles, double cutoff, int gaussian)
 {
   int *cl, *halo;
-  double *allds, *rho, *delta, *sortrho, *sortdelta, *bord_rho;
-  int i, j, counter, nclust;
+  double *rho, *delta, *sortrho, *sortdelta, *bord_rho;
+  int i, j, nclust;
   double dc, maxd, rhothreshold, deltathreshold;
   rho_struct *strho;
 
   // Initialize structures
   cl = (int*) malloc(sizeof(int) * n);
   halo = (int*) malloc(sizeof(int) * n); 
-  allds = (double*) malloc(sizeof(double) * (n * (n - 1) / 2));
   rho = (double*) malloc(sizeof(double) * n);
   delta = (double*) malloc(sizeof(double) * n);
   sortrho = (double*) malloc(sizeof(double) * n);
   sortdelta = (double*) malloc(sizeof(double) * n);
   strho = (rho_struct*) malloc(sizeof(rho_struct) * n);
 
-  // Calculate cutoff distance (dc)
-  //   Convert dissimilarity matrix into a vector
-  //   Sort dissimilarity vector ascendently
-  //   dc = distance at position 2%
-  counter = 0;
-  for (i = 0; i < n; i++) {
-    for(j = i + 1; j < n; j++) {
-      allds[counter] = dist[i][j];
-      counter++;
-    }
-  }
-  qsort(allds, n * (n - 1) / 2, sizeof(double), cmpd);
-  maxd = allds[counter - 1];
-
-  // Optimize dc
+  // Calculate optimal dc
+  // Calculate maximum distance
+  dc = dcoptimize(dist, n, &maxd);
   if (cutoff > 0)
     dc = cutoff;
-  else
-    dc = dcoptimize(dist, allds, n);
-fprintf(stderr, "%f\n", dc);
+  fprintf(stderr, "        Distance cutoff is %f\n", dc);
+
   // Calculate RHO[i] per point using gaussian kernel
   //   RHO[i] = sum {exp(-(dist(i,j)/dc)^2)}
   if (gaussian) {
@@ -175,7 +183,7 @@ fprintf(stderr, "%f\n", dc);
 
   // Identification of cluster centers
   //   i is a center <=> RHO[i] > rhothreshold and DELTA[i] > deltathreshold
-   nclust = 0;
+  nclust = 0;
   for (i = 0; i < n; i++) {
     cl[i] = 0;
     if (rho[i] > rhothreshold && delta[i] > deltathreshold)
@@ -244,7 +252,6 @@ fprintf(stderr, "%f\n", dc);
   // Free structures and exit
   free(cl);
   free(halo);
-  free(allds);
   free(rho);
   free(sortrho);
   free(delta);

@@ -259,7 +259,7 @@ int annotate_sc(int argc,  char **argv)
 
   // Clustering by dpClust
   fprintf(stderr, "[LOG] PERFORMING DP-CLUSTERING\n");
-  nclusters = dclust(xcorr, nprofiles, profiles, -1, 0);
+  nclusters = dclust(xcorr, nprofiles, profiles, -1, 1);
 
   // Calculate cross-species correlations if additional profiles provided
   if (arguments.additional_profiles) {
@@ -276,6 +276,7 @@ int annotate_sc(int argc,  char **argv)
 
   // Annotate unknown profiles if no additional profiles provided
   if (arguments.annotation && !arguments.additional_profiles) {
+    fprintf(stderr, "[LOG] ANNOTATING UNKNOWN PROFILES\n");
     cluster_annotate(nclusters, nprofiles, profiles);
   }
 
