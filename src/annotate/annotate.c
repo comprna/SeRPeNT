@@ -266,22 +266,8 @@ int annotate_sc(int argc,  char **argv)
 
   // Branch the tree according the cutoff
   if (arguments.cluster_cutoff < 0) {
-    double score = -1;
-    cutoff = 0;
-    int step;
-    for (step = 100; step >= 0; step--) {
-      for (i = 0; i < (nprofiles - 1); i++) hc[i].visited = 0;
-      for (i = 0; i < nprofiles; i++) profiles[i].cluster = -1;
-      double tmpcutoff = ((double)1)/((double)step);
-      hc_branch(hc, nprofiles, profiles, tmpcutoff);
-      double tmpscore = hc_eval(nprofiles, profiles);
-      if (tmpscore > score) {
-        score = tmpscore;
-        cutoff = tmpcutoff;
-      } 
-    }
-    for (i = 0; i < nprofiles; i++) profiles[i].cluster = -1;
-    for (i = 0; i < (nprofiles - 1); i++) hc[i].visited = 0;
+    double maxd;
+    cutoff = dcoptimize(xcorr, nprofiles, &maxd);
     nclusters = hc_branch(hc, nprofiles, profiles, cutoff);
     fprintf(stderr, "[LOG]   Estimated cutoff is %f\n", cutoff);
   }
@@ -306,22 +292,7 @@ int annotate_sc(int argc,  char **argv)
   // Annotate unknown profiles if no additional profiles provided
   if (arguments.annotation && !arguments.additional_profiles) {
     fprintf(stderr, "[LOG] ANNOTATING UNKNOWN PROFILES\n");
-
-    annotation_struct** matrix = (annotation_struct**) malloc(sizeof(annotation_struct*) * nprofiles);
-
-    for (i = 0; i < nprofiles; i++) {
-      matrix[i] = (annotation_struct*) malloc(sizeof(annotation_struct) * nprofiles);
-      for (j = 0; j < nprofiles; j++) {
-        matrix[i][j].score = xcorr[i][j];
-        matrix[i][j].index_i = i;
-        matrix[i][j].index_j = j;
-      }
-    }
-
-    xcorr_annotate(matrix, nprofiles, profiles);
-
-    for (i = 0; i < nprofiles; i++) free(matrix[i]);
-    free(matrix);
+    cluster_annotate(nclusters, nprofiles, profiles);
   }
 
   // Annotate unknown profiles if additional profiles provided

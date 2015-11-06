@@ -5,5 +5,6 @@
 #include <annotate/profilemap.h>
 #include <annotate/dtw.h>
 #include <annotate/annotation.h>
+#include <annotate/dclust.h>
 
 int annotate_sc(int argc, char** argv);
