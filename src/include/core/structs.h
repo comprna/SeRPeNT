@@ -74,6 +74,7 @@ typedef struct {
   char tmp_annotation[MAX_FEATURE];
   int cluster;
   int halo;
+  int center;
   double anscore;
   double max_height;
   double mean;

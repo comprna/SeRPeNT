@@ -180,14 +180,19 @@ int dclust(double** dist, int n, profile_struct_annotation* profiles, double cut
   qsort(sortdelta, n, sizeof(double), cmpd);
   rhothreshold = gsl_stats_quantile_from_sorted_data(sortrho, 1, n, 0.25);
   deltathreshold = gsl_stats_quantile_from_sorted_data(sortdelta, 1, n, 0.75);
+  fprintf(stderr, "        Rho cutoff is %f\n", rhothreshold);
+  fprintf(stderr, "        Delta cutoff is %f\n", deltathreshold);
 
   // Identification of cluster centers
   //   i is a center <=> RHO[i] > rhothreshold and DELTA[i] > deltathreshold
   nclust = 0;
   for (i = 0; i < n; i++) {
+    profiles[i].center = 0;
     cl[i] = 0;
-    if (rho[i] > rhothreshold && delta[i] > deltathreshold)
+    if (rho[i] > rhothreshold && delta[i] > deltathreshold) {
       cl[i] = ++nclust;
+      profiles[i].center = 1;
+    }
   }
 
   // Order points according RHO values in ORDRHO descendently
