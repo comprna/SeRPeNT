@@ -1,11 +1,12 @@
 #ifndef HELP_H
 #define HELP_H
 
-#define GENERAL_HELP_MSG "srnap - A suite of tools for ncRNA profiling and classification\n\n\
+#define GENERAL_HELP_MSG "srnap - A suite of tools for ncRNA profiling, classification and analysis\n\n\
 The srnap subcommands include:\n\n\
 [ Profiling tools ]\n\
    profiles    ncRNA discovery and profiling from small RNA-Seq data\n\
-   annotate    ncRNA clustering, classification and annotation from profile data\n\n\
+   annotate    ncRNA clustering, classification and annotation from profile data\n\
+   diffproc    ncRNA differential processing from profile and clustering data between two conditions\n\n\
 [ General help ]\n\
    -h          Print this help menu\n\
    -v          What version of srnap are you using?"
@@ -88,4 +89,20 @@ Output    :\n\
 Examples  :\n\
             srnap annotate -a hsap_micrornas.bed profiles.dat output_dir\n\
             srnap annotate -a hsap_micrornas.bed -x crosscor.dat profiles.dat output_dir"
+
+#define DIFFPROC_HELP_MSG "Tool      : diffproc\n\n\
+Summary   : ncRNA differential processing from profile and clustering data between two conditions\n\n\
+Usage     : srnap diffproc [OPTIONS] profiles_file_1.dat clustering_file_1.bed profile_file_2.dat clustering_file_2.bed output_folder\n\n\
+Options   :\n\
+            -g   p-value and overlap\n\
+                 Format is <pvalue:overlap> where:\n\
+                   - <pvalue> is the p-value threshold for filtering differentially processed profiles\n\
+                   - <overlap> is the overlap threshold for filtering differentially processed clusters\n\
+                 [ Default is 0.01:0.5 ]\n\n\
+Output    :\n\
+            output_folder/diffprofiles.dat : List of differentially processed profiles\n\
+            output_folder/diffclusters.dat : List of differentially processed clusters\n\n\
+Examples  :\n\
+            srnap diffproc wild_type/profiles.dat wild_type/annotation.bed treated/profiles.dat treated/annotation.bed output_dir\n\
+            srnap diffproc -g 0.01:0.2 wild_type/profiles.dat wild_type/annotation.bed treated/profiles.dat treated/annotation.bed output_dir"
 #endif

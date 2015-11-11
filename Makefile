@@ -1,13 +1,13 @@
 CC = gcc
 CFLAGS = -g -c -Wall
-OBJS = build/profiles.o build/paramprof.o build/bheap.o build/idr.o build/alignio.o build/trimming.o build/xcorr.o build/iofile.o build/paramclust.o build/cluster.o build/hierarchical.o build/itvltree.o build/dtw.o build/strmap.o build/profilemap.o build/annotation.o build/annotate.o build/dclust.o
+OBJS = build/profiles.o build/paramprof.o build/bheap.o build/idr.o build/alignio.o build/trimming.o build/xcorr.o build/iofile.o build/paramclust.o build/cluster.o build/hierarchical.o build/itvltree.o build/dtw.o build/strmap.o build/profilemap.o build/annotation.o build/annotate.o build/dclust.o build/diffproc.o build/paramdiff.o build/diffprocio.o build/npstats.o
 
 all : srnap
 
 
 # Build and compile executables
  
-srnap : profiles.o annotate.o srnap.o
+srnap : profiles.o annotate.o diffproc.o srnap.o
 	$(CC) -o bin/srnap $(OBJS) build/srnap.o -Llib/ -lgsl -lgslcblas -lm -lz -lpthread -lbam 
 
 srnap.o : setup
@@ -16,7 +16,19 @@ srnap.o : setup
 
 # Compile shared objects
 
-annotate.o : paramclust.o xcorr.o iofile.o dtw.o hierarchical.o profilemap.o annotation.o dclust.o
+diffproc.o : paramdiff.o diffprocio.o npstats.o
+	$(CC) $(CFLAGS) src/diffproc/diffproc.c -Isrc/include -o build/diffproc.o
+
+npstats.o : setup
+	$(CC) $(CFLAGS) src/diffproc/npstats.c -Isrc/include -o build/npstats.o
+
+diffprocio.o : setup
+	$(CC) $(CFLAGS) src/diffproc/diffprocio.c -Isrc/include -o build/diffprocio.o
+
+paramdiff.o : setup
+	$(CC) $(CFLAGS) src/diffproc/paramdiff.c -Isrc/include -o build/paramdiff.o
+
+annotate.o : paramclust.o xcorr.o iofile.o dtw.o hierarchical.o profilemap.o annotation.o dclust.o npstats.o
 	$(CC) $(CFLAGS) src/annotate/annotate.c -Isrc/include -o build/annotate.o
 
 profilemap.o : itvltree.o

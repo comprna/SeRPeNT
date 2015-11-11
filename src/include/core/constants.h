@@ -233,4 +233,22 @@
 #define NOVEL 0
 #define KNOWN 1
 
+/*
+ * Differential processing default p-value
+ */
+#define P_VALUE 0.01
+
+/*
+ * Differential processing default overlap
+ */
+#define DF_OVERLAP 0.5
+
+/*
+ * Suffix for differentially processed profiles
+ */
+#define DIFFPROC_PROFILE_O_SUFFIX "diffprofiles.dat"
+/*
+ * Suffix for differentially processed clusters
+ */
+#define DIFFPROC_CLUSTER_O_SUFFIX "diffclusters.dat"
 #endif

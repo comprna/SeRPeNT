@@ -13,6 +13,10 @@
  * ERROR : clusters - bad syntax
  */
 #define ERR_ANNOTATE_HELP_MSG "Please type <srnap annotate -h> for help"
+/*
+ * ERROR : diffproc - bad syntax
+ */
+#define ERR_DIFFPROC_HELP_MSG "Please type <srnap diffproc -h> for help"
 
 /*
  * ERROR : BED Format
@@ -132,6 +136,19 @@
  */
 #define ERR_INVALID_ovpptof_VALUE "Profile coverage <profile_coverage> must be a number between 0 and 1"
 
+/* 
+ * ERROR : Invalid argument for -g option
+ */
+#define ERR_INVALID_g_VALUE "Invalid argument for option -g"
+/*
+ * ERROR : Invalid p-value
+ */
+#define ERR_INVALID_pvalue_VALUE "P-value <pvalue> must be a number between 0 and 1"
+/*
+ * ERROR : Invalid overlapping value
+ */
+#define ERR_INVALID_cluster_overlapping_VALUE "Cluster overlapping value must be a number between 0 and 1"
+
 /*
  * ERROR : BED Format
  */
@@ -181,5 +198,9 @@
  * ERROR : Cannot read correlations file
  */
 #define ERR_CORRELATIONS_F_NOT_READABLE "Correlations file does not exist or is not readable"
+/*
+ * ERROR : Cannot read clusters file
+ */
+#define ERR_CLUSTER_F_NOT_READABLE "Clusters file does not exist or is not readable"
 
 #endif

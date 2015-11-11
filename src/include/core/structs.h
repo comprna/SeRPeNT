@@ -26,7 +26,7 @@ typedef struct {
 } args_p_struct;
 
 /*
- * Struct for handling clusters command line arguments
+ * Struct for handling annotate command line arguments
  */
 typedef struct {
   char output_f_path[MAX_PATH];
@@ -42,6 +42,19 @@ typedef struct {
   int correlations;
   char correlations_f_path[MAX_PATH];
 } args_a_struct;
+
+/*
+ * Struct for handling diffproc command line arguments
+ */
+typedef struct {
+  char output_f_path[MAX_PATH];
+  char profiles_a_f_path[MAX_PATH];
+  char clusters_a_f_path[MAX_PATH];
+  char profiles_b_f_path[MAX_PATH];
+  char clusters_b_f_path[MAX_PATH];
+  double pvalue;
+  double overlap;
+} args_d_struct;
 
 /*
  * Struct for handling sRNA profiles
@@ -61,6 +74,9 @@ typedef struct {
   int tend;
 } profile_struct;
 
+/*
+ * Struct for handling sRNA profiles during annotation
+ */
 typedef struct {
   double *profile;
   char chromosome[MAX_FEATURE];
@@ -80,6 +96,25 @@ typedef struct {
   double noise[MAX_PROFILE_LENGTH];
   int32_t category;
 } profile_struct_annotation;
+
+/*
+ * Struct for handling sRNA profiles during differential processing analysis
+ */
+struct profile_struct_diffproc {
+  double *profile;
+  char chromosome[MAX_FEATURE];
+  int start;
+  int end;
+  int length;
+  int32_t strand;
+  char annotation[MAX_FEATURE];
+  double noise[MAX_PROFILE_LENGTH];
+  int differential;
+  int cluster;
+  int position;
+  struct profile_struct_diffproc* partner;
+};
+typedef struct profile_struct_diffproc profile_struct_diffproc;
 
 /*
  * Struct for handling BAM alighment
@@ -164,6 +199,20 @@ typedef struct {
 } feature_struct;
 
 /*
+ * Structure for handling features in a cluster file
+ */
+typedef struct {
+  char chromosome[MAX_FEATURE];
+  int start;
+  int end;
+  char name[MAX_FEATURE];
+  double score;
+  int strand;
+  int status;
+  int cluster;
+} feature_struct_diffproc;
+
+/*
  * Structure for handling linked list for collisions in hash table
  * Used in npIDR method
  */
@@ -196,7 +245,7 @@ typedef struct {
 } sere_struct;
 
 /*
- * Struct for fast SERE IDR calculation
+ * Struct for fast Non-parametric IDR calculation
  */
 typedef struct {
   struct llist_struct** elems;
@@ -212,4 +261,13 @@ typedef struct {
   int index_i;
   int index_j;
 } annotation_struct;
+
+/*
+ * Struct for non-parametric stats
+ */
+typedef struct {
+  double value;
+  double adjidx;
+  int sample;
+} npstats_struct;
 #endif
