@@ -266,3 +266,123 @@ int dclust(double** dist, int n, profile_struct_annotation* profiles, double cut
 
   return nclust;
 }
+
+
+int dclustr_f(double** dist, int n, double dc, int gaussian, profile_struct_annotation** profiles, int ncluster)
+{
+  double *rho;
+  int i, j, nclust, grhoidx;
+  double maxrho;
+
+  // Initialize structures
+  rho = (double*) malloc(sizeof(double) * n);
+
+  // Calculate RHO[i] per point using gaussian kernel
+  //   RHO[i] = sum {exp(-(dist(i,j)/dc)^2)}
+  if (gaussian) {
+    for(i = 0; i < n; i++) {
+      for(j = i + 1; j < n; j++) {
+        double sq = -(dist[i][j] / (double)dc) * (dist[i][j] / (double)dc);
+        double expsq = exp(sq);
+        rho[i] += expsq;
+        rho[j] += expsq;
+      }
+    }
+  }
+
+  // Calculate RHO per point
+  //   RHO[i] = number of points j that satisfy dist(i,j) < dc 
+  if (!gaussian) {
+    for(i = 0; i < n; i++) {
+      for(j = i + 1; j < n; j++) {
+        if(dist[i][j] < dc) {
+          rho[i]++;
+          rho[j]++;
+        }
+      }
+    }
+  }
+
+  // Find point with greater RHO and assign cluster
+  maxrho = 0;
+  for (i = 0; i < n; i++) {
+    if (maxrho < rho[i]) {
+      grhoidx = i;
+      maxrho = rho[i];
+    }
+  }
+
+  // Assign same cluster to profiles that are at a distance < dc
+  nclust = 0;
+  for (i = 0; i < n; i++) {
+    if (dist[grhoidx][i] <= dc) {
+      nclust++;
+      profiles[i]->cluster = ncluster;
+    }
+  }
+
+  free(rho);
+  return(nclust); 
+}
+
+
+int dclustr(double** dist, int n, profile_struct_annotation* profiles, double cutoff, int gaussian)
+{
+  double dc, maxd;
+  int i, j;
+  int ncluster, nvisited, stop;
+
+  // Calculate distance cutoff
+  /*if (cutoff < 0)
+    dc = dcoptimize(dist, n, &maxd);
+  else
+    dc = cutoff;*/
+
+  // Perform dclustr_f till an empty cluster is found
+  nvisited = 0;
+  stop = 0;
+  ncluster = 1;
+  while (!stop) {
+    // Prepare
+    profile_struct_annotation** prf = (profile_struct_annotation**) malloc((n - nvisited) * sizeof(profile_struct_annotation*));
+    double** dm = (double**) malloc ((n - nvisited) * sizeof(double*));
+    for (i = 0; i < (n - nvisited); i++) dm[i] = (double*) malloc((n - nvisited) * sizeof(double));
+    int idxi = 0;
+    for (i = 0; i < n; i++) {
+      if (profiles[i].cluster < 0) {
+        prf[idxi] = &profiles[i];
+        int idxj = 0;
+        for (j = 0; j < n; j++) {
+          if (profiles[j].cluster < 0) {
+            dm[idxi][idxj] = dist[i][j];
+            idxj++;
+          }
+        }
+        idxi++;
+      }
+    }
+
+    // Cluster
+   dc = dcoptimize(dm, (n - nvisited), &maxd);
+   int nv = 0;
+   if (dc <= cutoff)
+     nv = dclustr_f(dm, (n - nvisited), dc, gaussian, prf, ncluster);
+   else//  if (nv == 1)
+     stop++;
+
+    // Finish
+    for (i = 0; i < (n - nvisited); i++) free(dm[i]);
+    nvisited += nv;
+    ncluster++;
+    free(dm);
+    free(prf);
+  }
+
+  // Assign remaining profiles to clusters
+  for (i = 0; i < n; i++) {
+    if (profiles[i].cluster < 0) profiles[i].cluster = ncluster++;
+  }
+
+  // Free and return
+  return (ncluster - 1);
+}

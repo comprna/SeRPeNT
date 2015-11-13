@@ -46,3 +46,5 @@ double dcoptimize(double** dist, int n, double* max);
  *   Number of clusters
  */
 int dclust(double** dist, int n, profile_struct_annotation* profiles, double cutoff, int gaussian);
+
+int dclustr(double** dist, int n, profile_struct_annotation* profiles, double cutoff, int gaussian);
