@@ -121,23 +121,21 @@ void cluster_annotate(int nclusters, int nprofiles, profile_struct_annotation* p
 
     for (j = 0; j < profiles_per_cluster[i]; j++) {
       int pindex = profiles_index[i][j];
-if (strcmp(profiles[pindex].annotation, "unknown") != 0) {
-      if (sm_get(sm, profiles[pindex].annotation, buffer, MAX_FEATURE) != 0) profiles_per_class[atoi(buffer)]++;
-      if (max < profiles_per_class[atoi(buffer)]) {
-        max = profiles_per_class[atoi(buffer)];
-        strncpy(class, profiles[pindex].annotation, MAX_FEATURE);
+      if (strcmp(profiles[pindex].annotation, "unknown") != 0) {
+        if (sm_get(sm, profiles[pindex].annotation, buffer, MAX_FEATURE) != 0) profiles_per_class[atoi(buffer)]++;
+        if (max < profiles_per_class[atoi(buffer)]) {
+          max = profiles_per_class[atoi(buffer)];
+          strncpy(class, profiles[pindex].annotation, MAX_FEATURE);
+        }
       }
-}
     }
 
     for (j = 0; j < profiles_per_cluster[i]; j++) {
-if (strcmp(class, "unknown") != 0) {
-      int pindex = profiles_index[i][j];
-      if (strcmp(profiles[pindex].annotation, "unknown") == 0) {
-        //if (profiles[pindex].halo == 0)
+      if (strcmp(class, "unknown") != 0) {
+        int pindex = profiles_index[i][j];
+        if (strcmp(profiles[pindex].annotation, "unknown") == 0)
           strncpy(profiles[pindex].annotation, class, MAX_FEATURE);
       }
-}
     }
 
     free(profiles_per_class);

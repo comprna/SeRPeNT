@@ -43,6 +43,7 @@ double dcoptimize(double** dist, int n, double* max)
   potentials = (double*) malloc(n * sizeof(double));
   allds = (double*) malloc(sizeof(double) * (n * (n - 1) / 2));
   hmin = DBL_MAX;
+  dc = 0.0;
 
   // Convert dissimilarity matrix into a vector
   // Sort dissimilarity vector ascendently
@@ -125,6 +126,7 @@ int dclust(double** dist, int n, profile_struct_annotation* profiles, double cut
   sortrho = (double*) malloc(sizeof(double) * n);
   sortdelta = (double*) malloc(sizeof(double) * n);
   strho = (rho_struct*) malloc(sizeof(rho_struct) * n);
+  for (i = 0; i < n; i++) rho[i] = 0.0;
 
   // Calculate optimal dc
   // Calculate maximum distance
@@ -276,6 +278,7 @@ int dclustr_f(double** dist, int n, double dc, int gaussian, profile_struct_anno
 
   // Initialize structures
   rho = (double*) malloc(sizeof(double) * n);
+  for (i = 0; i < n; i++) rho[i] = 0.0;
 
   // Calculate RHO[i] per point using gaussian kernel
   //   RHO[i] = sum {exp(-(dist(i,j)/dc)^2)}
@@ -305,6 +308,7 @@ int dclustr_f(double** dist, int n, double dc, int gaussian, profile_struct_anno
 
   // Find point with greater RHO and assign cluster
   maxrho = 0;
+  grhoidx = -1;
   for (i = 0; i < n; i++) {
     if (maxrho < rho[i]) {
       grhoidx = i;
@@ -312,7 +316,7 @@ int dclustr_f(double** dist, int n, double dc, int gaussian, profile_struct_anno
     }
   }
 
-  // Assign same cluster to profiles that are at a distance < dc
+  // Assign same cluster to profiles that are at a distance <= dc
   nclust = 0;
   for (i = 0; i < n; i++) {
     if (dist[grhoidx][i] <= dc) {
@@ -326,17 +330,39 @@ int dclustr_f(double** dist, int n, double dc, int gaussian, profile_struct_anno
 }
 
 
-int dclustr(double** dist, int n, profile_struct_annotation* profiles, double cutoff, int gaussian)
+/*
+ * dclustr
+ *
+ * @see include/annotate/dclust.h
+ */
+int dclustr(double** dist, int n, profile_struct_annotation* profiles, double cf, int gaussian)
 {
-  double dc, maxd;
-  int i, j;
+  double dc, maxd;//, cutoff;
+  int i, j;//, counter;
   int ncluster, nvisited, stop;
+  //double* allds;
 
+  /*
   // Calculate distance cutoff
-  /*if (cutoff < 0)
+  if (cutoff < 0)
     dc = dcoptimize(dist, n, &maxd);
   else
-    dc = cutoff;*/
+    dc = cutoff;
+  */
+
+  /*
+  allds = (double*) malloc((n * (n - 1) / 2) * sizeof(double));
+  counter = 0;
+  for (i = 0; i < (n - 1); i++) {
+    for(j = i + 1; j < n; j++) {
+      allds[counter] = dist[i][j];
+      counter++;
+    }
+  }
+  qsort(allds, n * (n - 1) / 2, sizeof(double), cmpd);
+  cutoff = gsl_stats_quantile_from_sorted_data(allds, 1, (n * (n - 1)) / 2, 0.02);
+  free(allds);
+  */
 
   // Perform dclustr_f till an empty cluster is found
   nvisited = 0;
@@ -363,12 +389,12 @@ int dclustr(double** dist, int n, profile_struct_annotation* profiles, double cu
     }
 
     // Cluster
-   dc = dcoptimize(dm, (n - nvisited), &maxd);
-   int nv = 0;
-   if (dc <= cutoff)
-     nv = dclustr_f(dm, (n - nvisited), dc, gaussian, prf, ncluster);
-   else//  if (nv == 1)
-     stop++;
+    dc = dcoptimize(dm, (n - nvisited), &maxd);
+    int nv = 0;
+    if (dc <= cf)//cutoff)
+      nv = dclustr_f(dm, (n - nvisited), dc, gaussian, prf, ncluster);
+    else//if (nv == 1) //else
+      stop++;
 
     // Finish
     for (i = 0; i < (n - nvisited); i++) free(dm[i]);

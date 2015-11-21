@@ -47,4 +47,22 @@ double dcoptimize(double** dist, int n, double* max);
  */
 int dclust(double** dist, int n, profile_struct_annotation* profiles, double cutoff, int gaussian);
 
-int dclustr(double** dist, int n, profile_struct_annotation* profiles, double cutoff, int gaussian);
+/*
+ * Calculate a clustering by fast search and find of density peaks
+ * Iterative variation
+ *
+ * @arg double** dist
+ *   Distance/dissimilarity matrix
+ * @arg int n
+ *   Number of elements in dist
+ * @arg profile_struct_annotation* profiles
+ *   An array of profiles
+ * @arg double cf
+ *   Distance cutoff to stop iterations
+ * @arg int gaussian
+ *   0 if no gaussian kernel for density calculation. 1 otherwise.
+ *
+ * @return
+ *   Number of clusters
+ */
+int dclustr(double** dist, int n, profile_struct_annotation* profiles, double cf, int gaussian);
