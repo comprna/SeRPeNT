@@ -307,7 +307,7 @@ int dclustr_f(double** dist, int n, double dc, int gaussian, profile_struct_anno
   }
 
   // Find point with greater RHO and assign cluster
-  maxrho = 0;
+  maxrho = -1;
   grhoidx = -1;
   for (i = 0; i < n; i++) {
     if (maxrho < rho[i]) {
