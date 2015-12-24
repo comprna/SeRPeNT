@@ -443,7 +443,7 @@ int diffproc_sc(int argc, char **argv)
 
       // Profile has no partner
       if (cond_a[i][idxi].partner == NULL)
-        fprintf(profiles_file, "%s:%d-%d:%s\t%s\tNA\tNA\tNA\tNA\n", cond_a[i][idxi].chromosome, cond_a[i][idxi].start, cond_a[i][idxi].end, strands[cond_a[i][idxi].strand], cond_a[i][idxi].annotation);
+        fprintf(profiles_file, "%s:%d-%d:%s\tNA\tNA\tNA\n", cond_a[i][idxi].chromosome, cond_a[i][idxi].start, cond_a[i][idxi].end, strands[cond_a[i][idxi].strand]);
 
       // Profile has partner
       else {
@@ -513,13 +513,13 @@ int diffproc_sc(int argc, char **argv)
           double mean_b = gsl_stats_mean(intra_b[j], 1, tdb);
           double mean_ab = gsl_stats_mean(interab, 1, tdab);
           double mean_ba = gsl_stats_mean(interba, 1, tdba);
-          fprintf(profiles_file, "%s:%d-%d:%s\t%s\t", pda.chromosome, pda.start, pda.end, strands[pda.strand], pda.annotation);
-          fprintf(profiles_file, "%s:%d-%d:%s\t%s\t", pdb.chromosome, pdb.start, pdb.end, strands[pdb.strand], pdb.annotation);
+          fprintf(profiles_file, "%s:%d-%d:%s\t", pda.chromosome, pda.start, pda.end, strands[pda.strand]);
+          fprintf(profiles_file, "%s:%d-%d:%s\t", pdb.chromosome, pdb.start, pdb.end, strands[pdb.strand]);
           fprintf(profiles_file, "%.2f\t%.2f\n", mean_ab / mean_b, mean_ba / mean_a);
         }
         else if (adpc < 0) {
-          fprintf(profiles_file, "%s:%d-%d:%s\t%s\t", pda.chromosome, pda.start, pda.end, strands[pda.strand], pda.annotation);
-          fprintf(profiles_file, "%s:%d-%d:%s\t%s\t", pdb.chromosome, pdb.start, pdb.end, strands[pdb.strand], pdb.annotation);
+          fprintf(profiles_file, "%s:%d-%d:%s\t", pda.chromosome, pda.start, pda.end, strands[pda.strand]);
+          fprintf(profiles_file, "%s:%d-%d:%s\t", pdb.chromosome, pdb.start, pdb.end, strands[pdb.strand]);
           fprintf(profiles_file, "NA\tNA\n");
         }
 
@@ -535,7 +535,7 @@ int diffproc_sc(int argc, char **argv)
     for (idxi = 0; idxi < cond_b_n[i]; idxi++) {
       profile_struct_diffproc pda = cond_b[i][idxi];
       if (pda.partner == NULL)
-        fprintf(profiles_file, "NA\tNA\t%s:%d-%d:%s\t%s\tNA\tNA\n", pda.chromosome, pda.start, pda.end, strands[pda.strand], pda.annotation);
+        fprintf(profiles_file, "NA\t%s:%d-%d:%s\tNA\tNA\n", pda.chromosome, pda.start, pda.end, strands[pda.strand]);
     }
   }
 
