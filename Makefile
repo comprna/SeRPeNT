@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -g -c -Wall
-OBJS = build/profiles.o build/paramprof.o build/bheap.o build/idr.o build/alignio.o build/trimming.o build/xcorr.o build/iofile.o build/paramclust.o build/cluster.o build/hierarchical.o build/itvltree.o build/dtw.o build/strmap.o build/profilemap.o build/annotation.o build/annotate.o build/dclust.o build/diffproc.o build/paramdiff.o build/diffprocio.o build/npstats.o
+CFLAGS = -O3 -c -Wall
+OBJS = build/profiles.o build/paramprof.o build/bheap.o build/idr.o build/alignio.o build/trimming.o build/xcorr.o build/iofile.o build/paramclust.o build/cluster.o build/hierarchical.o build/itvltree.o build/dtw.o build/strmap.o build/profilemap.o build/annotation.o build/dclust.o build/annotate.o build/diffproc.o build/paramdiff.o build/diffprocio.o build/npstats.o
 
 all : srnap
 

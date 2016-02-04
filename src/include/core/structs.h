@@ -89,6 +89,8 @@ typedef struct {
   char annotation[MAX_FEATURE];
   char tmp_annotation[MAX_FEATURE];
   int cluster;
+  int halo;
+  int center;
   double anscore;
   double max_height;
   double mean;
@@ -270,4 +272,12 @@ typedef struct {
   double adjidx;
   int sample;
 } npstats_struct;
+
+/*
+ * Struct for dp clustering
+ */
+typedef struct {
+  double value;
+  int index;
+} rho_struct;
 #endif

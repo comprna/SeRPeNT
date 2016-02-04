@@ -22,7 +22,6 @@ int annotate_sc(int argc,  char **argv)
   profile_struct_annotation* profiles;                   // Array of profiles
   profile_struct_annotation* additional_profiles;        // Array of additional profiles
   map_struct map;                                        // Profile map
-  hcnode_struct *hc;                                     // Hierarchical clustering
   char categories[2][6] = {"NOVEL\0", "KNOWN\0"};        // Array for printing category
   char strands[2][2] = {"+\0", "-\0"};                   // Array for printing strand
   double cutoff;                                         // Branching calculated cutoff value
@@ -45,6 +44,7 @@ int annotate_sc(int argc,  char **argv)
 
   // Open output files for writing results.
   // Exit if output files do not exist or are not readable.
+  clusters_file = NULL;
   char *clusters_file_name = malloc((MAX_PATH + strlen(CLUSTERS_SUFFIX) + 2) * sizeof(char));
   strncpy(clusters_file_name, arguments.output_f_path, MAX_PATH);
   strcat(clusters_file_name, PATH_SEPARATOR);
@@ -57,6 +57,7 @@ int annotate_sc(int argc,  char **argv)
   free(clusters_file_name);
 
   // Open annotation output file if annotation input file is provided
+  annotation_o_file = NULL;
   if (arguments.annotation) {
     char *annotation_file_output_name = malloc((MAX_PATH + strlen(ANNOTATION_O_SUFFIX) + 2) * sizeof(char));
     strncpy(annotation_file_output_name, arguments.output_f_path, MAX_PATH);
@@ -83,6 +84,8 @@ int annotate_sc(int argc,  char **argv)
   // Check if additional profile file is provided.
   // Open additional profiles file for reading and check number of lines.
   // Exit if additional profiles file do not exist or is not readable
+  naprofiles = 0;
+  additional_profiles_file = NULL;
   if (arguments.additional_profiles) {
     additional_profiles_file = fopen(arguments.additional_profiles_f_path, "r");
     if (!additional_profiles_file) {
@@ -120,6 +123,7 @@ int annotate_sc(int argc,  char **argv)
   // Allocate memory for additional profiles
   // Open additional profiles file for reading and load them into memory.
   // Exit if profiles file does not exist, is not readable or is ill-formatted.
+  additional_profiles = NULL;
   if (arguments.additional_profiles) {
     additional_profiles = (profile_struct_annotation*) malloc(naprofiles * sizeof(profile_struct_annotation));
     index = 0;
@@ -176,6 +180,7 @@ int annotate_sc(int argc,  char **argv)
   }
 
   // Allocate memory for cross-species correlations if additional profiles provided
+  xspeciescorr = NULL;
   if (arguments.additional_profiles) {
     xspeciescorr = (double**) malloc(nprofiles * sizeof(double*));
     for (i = 0; i < nprofiles; i++)
@@ -258,23 +263,9 @@ int annotate_sc(int argc,  char **argv)
     fclose(xcorr_file);
   }
 
-  // Compute MLINK hierarchical clustering
-  // Print in neWick format
-  fprintf(stderr, "[LOG] PERFORMING HIERARCHICAL CLUSTERING\n");
-  hc = hc_cluster(xcorr, nprofiles);
-  hc_print(clusters_file, hc, nprofiles, profiles);
-
-  // Branch the tree according the cutoff
-  if (arguments.cluster_cutoff < 0) {
-    double maxd;
-    cutoff = dcoptimize(xcorr, nprofiles, &maxd);
-    nclusters = hc_branch(hc, nprofiles, profiles, cutoff);
-    fprintf(stderr, "[LOG]   Estimated cutoff is %f\n", cutoff);
-  }
-  else {
-    nclusters = hc_branch(hc, nprofiles, profiles, arguments.cluster_cutoff);
-    cutoff = arguments.cluster_cutoff;
-  }
+  // Clustering by dpClust
+  fprintf(stderr, "[LOG] PERFORMING DP-CLUSTERING\n");
+  nclusters = dclustr(xcorr, nprofiles, profiles, 0.02, 1);
 
   // Calculate cross-species correlations if additional profiles provided
   if (arguments.additional_profiles) {
@@ -310,6 +301,12 @@ int annotate_sc(int argc,  char **argv)
       }
     }
 
+    // TODO
+    if (arguments.cluster_cutoff < 0)
+      cutoff = 0.01;
+    else
+      cutoff = arguments.cluster_cutoff;
+
     xspeciescorr_annotate(matrix, nprofiles, profiles, naprofiles, additional_profiles, cutoff);
 
     for (i = 0; i < nprofiles; i++) free(matrix[i]);
@@ -331,7 +328,6 @@ int annotate_sc(int argc,  char **argv)
   for (i = 0; i < nprofiles; i++)
     free(xcorr[i]);
   free(xcorr);
-  free(hc);
   fclose(clusters_file);
   fclose(profiles_file);
   if (arguments.annotation)

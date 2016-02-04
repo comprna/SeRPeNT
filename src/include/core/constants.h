@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <math.h>
 #include <time.h>
+#include <float.h>
 #include <utils/version.h>
 #include <utils/help.h>
 #include <utils/error.h>
