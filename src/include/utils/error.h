@@ -147,7 +147,7 @@
 /*
  * ERROR : Invalid overlapping value
  */
-#define ERR_INVALID_cluster_overlapping_VALUE "Cluster overlapping value must be a number between 0 and 1"
+#define ERR_INVALID_cluster_overlapping_VALUE "Fold-change must be a number greater than 0"
 
 /*
  * ERROR : BED Format

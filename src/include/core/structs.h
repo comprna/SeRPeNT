@@ -53,7 +53,7 @@ typedef struct {
   char profiles_b_f_path[MAX_PATH];
   char clusters_b_f_path[MAX_PATH];
   double pvalue;
-  double overlap;
+  double foldchange;
 } args_d_struct;
 
 /*

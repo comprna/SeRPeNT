@@ -146,18 +146,16 @@ The srnap subcommands include:
 **Options** :
 
             -g   p-value and overlap
-                 Format is <pvalue:overlap> where:
+                 Format is <pvalue:foldchange> where:
                    - <pvalue> is the p-value threshold for filtering differentially processed profiles
-                   - <overlap> is the overlap threshold for filtering differentially processed clusters
+                   - <foldchange> is the distance fold-change threshold for filtering differentially processed clusters
                  [ Default is 0.01:0.5 ]
 
 **Output** :
 
   output_folder/diffprofiles.dat : List of differentially processed profiles
 
-  output_folder/diffclusters.dat : List of differentially processed clusters
-
 **Examples** :
 
-  srnap diffproc -g 0.01:0.2 wild_type/profiles.dat wild_type/annotation.bed treated/profiles.dat treated/annotation.bed output_dir
+  srnap diffproc -g 0.01:5 wild_type/profiles.dat wild_type/annotation.bed treated/profiles.dat treated/annotation.bed output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

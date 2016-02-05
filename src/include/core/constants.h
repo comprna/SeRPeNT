@@ -242,7 +242,7 @@
 /*
  * Differential processing default overlap
  */
-#define DF_OVERLAP 0.5
+#define DP_FOLD_CHANGE 7 
 
 /*
  * Suffix for differentially processed profiles

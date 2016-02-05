@@ -72,8 +72,8 @@ int parse_filter_output_parameters(char* option, char** error_message, args_d_st
   }
 
   if ((token = strtok(NULL, ":")) != NULL) {
-    arguments->overlap = atof(token);
-    if (arguments->overlap < 0 || arguments->overlap > 1) {
+    arguments->foldchange = atof(token);
+    if (arguments->foldchange < 0) {
       *error_message = ERR_INVALID_cluster_overlapping_VALUE;
       return(-1);
     }

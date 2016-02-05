@@ -107,7 +107,6 @@ int assess_dp_c(double* a, int n, double* b, int m, double* x, int y, double pva
 
 int assess_dp_p(double* a, int n, double* ba, int mn, double* b, int m, double* ab, int nm, double pval)
 {
-  double mean_a, mean_b, mean_ab, mean_ba;
   int mwab, mwba;
 
   // Differential processing is not assessable by Mann-Whitney U test.
@@ -115,37 +114,35 @@ int assess_dp_p(double* a, int n, double* ba, int mn, double* b, int m, double* 
   if (n == 0 || m == 0 || nm == 0 || mn == 0)
     return -1;
 
-  // Differential processing is assessable by Mann-Whitney U test
-  // between a and ba
+  // Differential processing is assessable by Mann-Whitney U test between a and ba
   if (mannwhitney_a(n, mn, pval)) {
     if (n > 20 || mn > 20)
       mwba = mannwhitney_i(a, n, ba, mn, pval);
     else
       mwba = mannwhitney_d(a, n, ba, mn, pval);
   } 
-  else {
-    mean_a = gsl_stats_mean(a, 1, n);
-    mean_ba = gsl_stats_mean(ba, 1, mn);
-    mwba = (mean_ba >= 2.0 * mean_a);//TODO
-  }
+  // Differential processing is not assessable by Mann-Whitney U test between a and ba
+  // Not enough samples in distribution
+  else
+    return -1;
 
-  // Differential processing is assessable by Mann-Whitney U test
-  // between b and ab
+  // Differential processing is assessable by Mann-Whitney U test between b and ab
   if (mannwhitney_i(b, m, ab, nm, pval)) {
     if (m > 20 || nm > 20)
       mwab = mannwhitney_i(b, m, ab, nm, pval);
     else
       mwab =  mannwhitney_d(b, m, ab, nm, pval);
   }
-  else {
-    mean_b = gsl_stats_mean(b, 1, m);
-    mean_ab = gsl_stats_mean(ab, 1, nm);
-    mwab = (mean_ab >= 2.0 * mean_b); //TODO
-  }
+  // Differential processing is not assessable by Mann-Whitney U test between b and ab
+  // Not enough samples in distribution
+  else
+    return -1;
 
+  // Mann-Whitney U-test p-value < user-defined pval
   if (mwab > 0 && mwba > 0)
     return 1;
 
+  // Mann-Whitney U-test p-value >= user-defined pval
   return 0;
 }
 
@@ -160,7 +157,7 @@ int diffproc_sc(int argc, char **argv)
   char* error_message;                     // Error message to display in case of abnormal termination
   FILE *clusters_a_file, *clusters_b_file; // Clusters file descriptors for conditions A and B
   FILE *profiles_a_file, *profiles_b_file; // Profile file descriptors for conditions A and B
-  FILE *profiles_file, *clusters_file;     // Output file descriptors
+  FILE *profiles_file;                     // Output file descriptor
   int nclusters_a, nclusters_b;            // Total number of clusters in conditions A and B
   int nprofiles_a, nprofiles_b;            // Total number of profiles in conditions A and B
   profile_struct_diffproc** cond_a;        // Array of profile structs for condition A. Each position in the array is a cluster number (0-based)
@@ -173,10 +170,13 @@ int diffproc_sc(int argc, char **argv)
   double** intra_a;                        // Intracluster distances for condition A
   double** intra_b;                        // Intracluster distances for condition B
   char strands[2][2] = {"+\0", "-\0"};     // Array for printing strand
+  double meanid;                           // Mean intra-cluster distance
+  double cutoff;                           // Cutoff for differential processing
+  int numid;                               // Number of intra-cluster distances
 
   // Initialize options with default values
-  arguments.pvalue = P_VALUE;
-  arguments.overlap = DF_OVERLAP;
+  arguments.pvalue = (double) P_VALUE;
+  arguments.foldchange = (double) DP_FOLD_CHANGE;
 
   // Parse command line
   // Exit if command is not well-formed
@@ -279,6 +279,8 @@ int diffproc_sc(int argc, char **argv)
   fprintf(stderr, "[LOG]   %d profiles loaded\n", nprofiles_b);
 
   // Calculate intracluster distances for condition A
+  meanid = 0.0f;
+  numid = 0;
   fprintf(stderr, "[LOG] CALCULATING INTRA CLUSTER DISTANCES FOR CONDITION A\n");
   intra_a = (double**) malloc(nclusters_a * sizeof(double*));
   for (i = 0; i < nclusters_a; i++) {
@@ -300,6 +302,8 @@ int diffproc_sc(int argc, char **argv)
         double xcr = xdtw(&pa, &pb);
         if (xcr < 0) xcr = 0;
         intra_a[i][idx] = 1 - xcr;
+        meanid += intra_a[i][idx];
+        numid++;
         idx++;
       }
     }
@@ -328,10 +332,37 @@ int diffproc_sc(int argc, char **argv)
         double xcr = xdtw(&pa, &pb);
         if (xcr < 0) xcr = 0;
         intra_b[i][idx] = 1 - xcr;
+        meanid += intra_b[i][idx];
+        numid++;
         idx++;
       }
     }
     qsort(intra_b[i], td, sizeof(double), cmpds);
+  }
+
+  // Calculate cutoff
+  // Cutoff is 10 times the mean intra-cluster distance
+  meanid = meanid / ((double) numid);
+  cutoff = meanid * ((double) arguments.foldchange);
+
+  // Calculate partners
+  for (i = 0; i < nclusters_a; i++) {
+    for (j = 0; j < nclusters_b; j++) {
+      int idxi;
+      int idxj;
+
+      for (idxi = 0; idxi < cond_a_n[i]; idxi++) {
+        profile_struct_diffproc pda = cond_a[i][idxi];
+        for (idxj = 0; idxj < cond_b_n[j]; idxj++) {
+          profile_struct_diffproc pdb = cond_b[j][idxj];
+          if ((strcmp(pda.chromosome, pdb.chromosome) == 0) && (pda.strand == pdb.strand) &&
+              (pdb.start <= pda.end) && (pda.start <= pdb.end)) {
+            cond_a[i][idxi].partner = &cond_b[j][idxj];
+            cond_b[j][idxj].partner = &cond_a[i][idxi];
+          }
+        }
+      }
+    }
   }
 
   // Open output file for differentially processed profiles 
@@ -346,104 +377,18 @@ int diffproc_sc(int argc, char **argv)
   }
   free(profile_output_name);
 
-  // Open output file for differentially processed clusters
-  char *cluster_output_name = malloc((MAX_PATH + strlen(DIFFPROC_CLUSTER_O_SUFFIX) + 2) * sizeof(char));
-  strncpy(cluster_output_name, arguments.output_f_path, MAX_PATH);
-  strcat(cluster_output_name, PATH_SEPARATOR);
-  strcat(cluster_output_name, DIFFPROC_CLUSTER_O_SUFFIX);
-  clusters_file = fopen(cluster_output_name, "w");
-  if (!clusters_file) {
-    fprintf(stderr, "%s\n", ERR_OUTPUT_F_NOT_WRITABLE);
-    return (1);
-  }
-  free(cluster_output_name);
-
-  // Do cluster pairwise comparison
-  // For each pair of clusters, calculate distributions and overlapping
-  // For each pair of clusters with overlapping >= arguments.overlapping, assess differential processing
-  fprintf(stderr, "[LOG] ASSESSING DIFFERENTIALLY PROCESSED CLUSTERS BETWEEN CONDITIONS\n");
-  fprintf(stderr, "      pval < %f\n", arguments.pvalue);
-  fprintf(stderr, "      overlap > %f\n", arguments.overlap);
-  for (i = 0; i < nclusters_a; i++) {
-    for (j = 0; j < nclusters_b; j++) {
-      int idxi;
-      int idxj;
-
-      // Check overlap
-      int elements = 0;
-      double ovp;
-      for (idxi = 0; idxi < cond_a_n[i]; idxi++) {
-        profile_struct_diffproc pda = cond_a[i][idxi];
-        for (idxj = 0; idxj < cond_b_n[j]; idxj++) {
-          profile_struct_diffproc pdb = cond_b[j][idxj];
-          if ((strcmp(pda.chromosome, pdb.chromosome) == 0) && (pda.strand == pdb.strand) &&
-              (pdb.start <= pda.end) && (pda.start <= pdb.end)) {
-            cond_a[i][idxi].partner = &cond_b[j][idxj];
-            cond_b[j][idxj].partner = &cond_a[i][idxi];
-            elements++;
-          }
-        }
-      }
-      ovp = ((double) (elements * 2)) / ((double) (cond_a_n[i] + cond_b_n[j]));
-
-      // Calculate inter-cluster distances
-      if (ovp >= arguments.overlap) {
-        double* inter = (double*) malloc((cond_a_n[i] * cond_b_n[j]) * sizeof(double));
-        int idx = 0;
-
-        for (idxi = 0; idxi < cond_a_n[i]; idxi++) {
-          profile_struct_diffproc pda = cond_a[i][idxi];
-          profile_struct_annotation pa;
-          pa.profile = pda.profile;
-          int l; for (l = 0; l < MAX_PROFILE_LENGTH; l++) pa.noise[l] = pda.noise[l];
-          pa.length = pda.length;
-
-          for (idxj = 0; idxj < cond_b_n[j]; idxj++) {
-            profile_struct_diffproc pdb = cond_b[j][idxj];
-            profile_struct_annotation pb;
-            pb.profile = pdb.profile;
-            int l; for (l = 0; l < MAX_PROFILE_LENGTH; l++) pb.noise[l] = pdb.noise[l];
-            pb.length = pdb.length;
-            double xcr = xdtw(&pa, &pb);
-            if (xcr < 0) xcr = 0;
-            inter[idx] = 1 - xcr;
-            idx++;
-          }
-        }
-        qsort(inter, cond_a_n[i] * cond_b_n[j], sizeof(double), cmpds);
-        int tda = ((cond_a_n[i] - 1) * cond_a_n[i]) / 2;
-        int tdb = ((cond_b_n[j] - 1) * cond_b_n[j]) / 2;
-        int adpc = assess_dp_c(intra_a[i], tda, intra_b[j], tdb, inter, cond_a_n[i] * cond_b_n[j], arguments.pvalue);
-        if (adpc > 0) {
-          /* DEBUGGING PURPOSES
-          int r;
-          for (r = 0; r < tda; r++) fprintf(stdout, "%dV%d\tA\t%f\n", i + 1, j + 1, intra_a[i][r]);
-          for (r = 0; r < tdb; r++) fprintf(stdout, "%dV%d\tB\t%f\n", i + 1, j + 1, intra_b[j][r]);         
-          for (r = 0; r < cond_a_n[i] * cond_b_n[j]; r++) fprintf(stdout, "%dV%d\tAB\t%f\n", i + 1, j + 1, inter[r]);
-             END DEBUGGING PURPOSES */
-          double mean_a = gsl_stats_mean(intra_a[i], 1, tda);
-          double mean_b = gsl_stats_mean(intra_b[j], 1, tdb);
-          double mean_x = gsl_stats_mean(inter, 1, cond_a_n[i] * cond_b_n[j]);
-          fprintf(clusters_file, "%d\t%d\t%d\t%d\t%.2f\t%.2f\t%.2f\n", i + 1, j + 1, cond_a_n[i], cond_b_n[j], ovp, mean_x / mean_a, mean_x / mean_b);
-        }
-        else if (adpc < 0)
-          fprintf(clusters_file, "%d\t%d\t%d\t%d\t%.2f\tNA\tNA\n", i + 1, j + 1, cond_a_n[i], cond_b_n[j], ovp);
-        free(inter);
-      }
-    }
-  }
-
   // Assess differentially processed profiles
   // For each profile in condition A that has a partner, calculate differential processing
   fprintf(stderr, "[LOG] ASSESSING DIFFERENTIALLY PROCESSED PROFILES BETWEEN CONDITIONS\n");
   fprintf(stderr, "      pval < %f\n", arguments.pvalue);
+  fprintf(stderr, "      cutoff > %.2f\n", cutoff);
   for (i = 0; i < nclusters_a; i++) {
     int idxi;
     for (idxi = 0; idxi < cond_a_n[i]; idxi++) {
 
       // Profile has no partner
       if (cond_a[i][idxi].partner == NULL)
-        fprintf(profiles_file, "%s:%d-%d:%s\tNA\tNA\tNA\n", cond_a[i][idxi].chromosome, cond_a[i][idxi].start, cond_a[i][idxi].end, strands[cond_a[i][idxi].strand]);
+        fprintf(profiles_file, "%s:%d-%d:%s\tNA\tNA\tNA\tNA\n", cond_a[i][idxi].chromosome, cond_a[i][idxi].start, cond_a[i][idxi].end, strands[cond_a[i][idxi].strand]);
 
       // Profile has partner
       else {
@@ -499,29 +444,29 @@ int diffproc_sc(int argc, char **argv)
         // Assess differential processing of profile in A against cluster in B
         // Assess differential processing of profile in B against cluster in A
         int adpc = assess_dp_p(intra_a[i], tda, interba, tdba, intra_b[j], tdb, interab, tdab, arguments.pvalue);
-        if (adpc > 0) {
-          /* DEBUGGING PURPOSES
-          int r;
-          char ft[MAX_FEATURE];
-          sprintf(ft, "%s:%d-%d:%s", pda.chromosome, pda.start, pda.end, strands[pda.strand]);
-          for (r = 0; r < tda; r++) fprintf(stdout, "%s\tA\t%f\n", ft, intra_a[i][r]);
-          for (r = 0; r < tdb; r++) fprintf(stdout, "%s\tB\t%f\n", ft, intra_b[j][r]);         
-          for (r = 0; r < tdba; r++) fprintf(stdout, "%s\tBA\t%f\n", ft, interba[r]);
-          for (r = 0; r < tdab; r++) fprintf(stdout, "%s\tAB\t%f\n", ft, interab[r]);
-             END DEBUGGING PURPOSES */
-          double mean_a = gsl_stats_mean(intra_a[i], 1, tda);
-          double mean_b = gsl_stats_mean(intra_b[j], 1, tdb);
-          double mean_ab = gsl_stats_mean(interab, 1, tdab);
-          double mean_ba = gsl_stats_mean(interba, 1, tdba);
-          fprintf(profiles_file, "%s:%d-%d:%s\t", pda.chromosome, pda.start, pda.end, strands[pda.strand]);
-          fprintf(profiles_file, "%s:%d-%d:%s\t", pdb.chromosome, pdb.start, pdb.end, strands[pdb.strand]);
-          fprintf(profiles_file, "%.2f\t%.2f\n", mean_ab / mean_b, mean_ba / mean_a);
-        }
-        else if (adpc < 0) {
-          fprintf(profiles_file, "%s:%d-%d:%s\t", pda.chromosome, pda.start, pda.end, strands[pda.strand]);
-          fprintf(profiles_file, "%s:%d-%d:%s\t", pdb.chromosome, pdb.start, pdb.end, strands[pdb.strand]);
-          fprintf(profiles_file, "NA\tNA\n");
-        }
+
+        // Assess magnitude of change
+        double mean_ab = gsl_stats_mean(interab, 1, tdab);
+        double mean_ba = gsl_stats_mean(interba, 1, tdba);
+        int pdcp = (mean_ab > cutoff) && (mean_ba > cutoff);
+
+        // Print results
+        fprintf(profiles_file, "%s:%d-%d:%s\t", pda.chromosome, pda.start, pda.end, strands[pda.strand]);
+        fprintf(profiles_file, "%s:%d-%d:%s\t", pdb.chromosome, pdb.start, pdb.end, strands[pdb.strand]);
+
+        if (adpc < 0)
+          fprintf(profiles_file, "NA\t");
+        else if (adpc == 0)
+          fprintf(profiles_file, "NO\t");
+        else
+          fprintf(profiles_file, "YES\t");
+        
+        if (pdcp == 0)
+          fprintf(profiles_file, "NO\t");
+        else
+          fprintf(profiles_file, "YES\t");
+
+        fprintf(profiles_file, "%.2f\t%.2f\n", mean_ab, mean_ba);
 
         free(interab);
         free(interba);        
@@ -535,12 +480,11 @@ int diffproc_sc(int argc, char **argv)
     for (idxi = 0; idxi < cond_b_n[i]; idxi++) {
       profile_struct_diffproc pda = cond_b[i][idxi];
       if (pda.partner == NULL)
-        fprintf(profiles_file, "NA\t%s:%d-%d:%s\tNA\tNA\n", pda.chromosome, pda.start, pda.end, strands[pda.strand]);
+        fprintf(profiles_file, "NA\t%s:%d-%d:%s\tNA\tNA\tNA\n", pda.chromosome, pda.start, pda.end, strands[pda.strand]);
     }
   }
 
   // Close descriptors
-  fclose(clusters_file);
   fclose(profiles_file);
 
   // Free pointer and exit

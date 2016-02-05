@@ -95,9 +95,9 @@ Summary   : ncRNA differential processing from profile and clustering data betwe
 Usage     : srnap diffproc [OPTIONS] profiles_file_1.dat clustering_file_1.bed profile_file_2.dat clustering_file_2.bed output_folder\n\n\
 Options   :\n\
             -g   p-value and overlap\n\
-                 Format is <pvalue:overlap> where:\n\
+                 Format is <pvalue:foldchange> where:\n\
                    - <pvalue> is the p-value threshold for filtering differentially processed profiles\n\
-                   - <overlap> is the overlap threshold for filtering differentially processed clusters\n\
+                   - <foldchange> is the distance fold-change threshold for filtering differentially processed clusters\n\
                  [ Default is 0.01:0.5 ]\n\n\
 Output    :\n\
             output_folder/diffprofiles.dat : List of differentially processed profiles\n\
