@@ -145,7 +145,7 @@ The srnap subcommands include:
 
 **Options** :
 
-            -g   p-value and overlap
+            -g   p-value and distance fold-change threshold
                  Format is <pvalue:foldchange> where:
                    - <pvalue> is the p-value threshold for filtering differentially processed profiles
                    - <foldchange> is the distance fold-change threshold for filtering differentially processed clusters

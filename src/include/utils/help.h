@@ -94,7 +94,7 @@ Examples  :\n\
 Summary   : ncRNA differential processing from profile and clustering data between two conditions\n\n\
 Usage     : srnap diffproc [OPTIONS] profiles_file_1.dat clustering_file_1.bed profile_file_2.dat clustering_file_2.bed output_folder\n\n\
 Options   :\n\
-            -g   p-value and overlap\n\
+            -g   p-value and distance fold-change threshold\n\
                  Format is <pvalue:foldchange> where:\n\
                    - <pvalue> is the p-value threshold for filtering differentially processed profiles\n\
                    - <foldchange> is the distance fold-change threshold for filtering differentially processed clusters\n\
