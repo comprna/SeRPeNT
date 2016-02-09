@@ -466,7 +466,7 @@ int diffproc_sc(int argc, char **argv)
         else
           fprintf(profiles_file, "YES\t");
 
-        fprintf(profiles_file, "%.2f\t%.2f\n", mean_ab, mean_ba);
+        fprintf(profiles_file, "%.2f\t%.2f\n", mean_ab / meanid, mean_ba / meanid);
 
         free(interab);
         free(interba);        
