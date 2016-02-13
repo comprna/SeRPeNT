@@ -194,9 +194,9 @@ int cmpnp (const void *x, const void *y)
 
 /*
  * ztop
- *   Convert z-score to p-value
+ *   Convert z-score to p-value. One-sided.
  *
- * p = 2*pnorm(-abs(z))
+ * p = pnorm(-abs(z))
  *
  * @arg double z 
  *   z-score
@@ -209,7 +209,7 @@ double ztop (double z)
   int idx = (int) (sqrt(z*z) * 100.0f + 0.5f);
   if (idx > 999) idx = 999;
   idx = 999 - idx;
-  return (2 * ZSCORE[idx]);
+  return(ZSCORE[idx]);
 }
 
 
@@ -231,7 +231,7 @@ int mannwhitney_d (double* p, int n, double* q, int m, double pval)
       else if (p[i] == q[j]) up += 0.5f;
     }
   }
-fprintf(stderr, "%f\n", up);
+
   // Check critical value tables and rehect H0 if U <= Ucritical
   if ((pval <= 0.0100001) && (up <= MWUL[n - 1][m - 1]))  // Floating point issues
     return(1);
@@ -251,7 +251,7 @@ int mannwhitney_i (double* p, int n, double* q, int m, double pval)
 {
   npstats_struct* all;
   int i, j, idx;
-  double u, z, r, nd, md, mu, sd;
+  double u, z, r, nd, md, mu, sd, pv;
 
   // Merge all observations from samples p and q and sort
   all = (npstats_struct*) malloc((n + m) * sizeof(npstats_struct));
@@ -293,14 +293,21 @@ int mannwhitney_i (double* p, int n, double* q, int m, double pval)
   md = (double) m;
   u = r - ((nd * (nd + 1)) / 2);
 
-  // Calculate Z
+  // Calculate mu
   mu = (md * nd) / 2.0f;
+
+  // Calculate z and pval
   sd = sqrt((md * nd * (md + nd + 1.0f)) / 12);
   z = (u - mu) / sd;
+  pv = ztop(z);
+
+  // One-sided test
+  if (z > 0)
+    pv = 1.0f - pv;
 
   // Return
   free(all);
-  if (ztop(z) <= pval)
+  if (pv <= pval)
     return(1);
   return(0);
 }
