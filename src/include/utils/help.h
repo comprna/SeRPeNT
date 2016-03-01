@@ -62,21 +62,11 @@ Options   :\n\
                  Format is <annotation_file>, where:\n\
                    - <annotation_file> is a BED file with annotated features\n\
                  [ No default value ]\n\n\
-            -d   Additional profiles file\n\
-                 Format is <species:profiles_file>, where:\n\
-                   - <species> is the name of the species where the profiles comes from. e.g. hsap.\n\
-                   - <profiles_file> is a profiles file\n\
-                 [ No default value ]\n\n\
             -o   Overlapping parameters\n\
                  Format is <feature_to_profile:profile_to_feature>, where:\n\
                    - <feature_to_profile> is the percentage of nucleotides from the feature that overlap the profile\n\
                    - <profile_to_feature> is the percentage of nucleotides from the profile that overlap the feature\n\
                  [ Default is 0.9:0.5 ]\n\n\
-            -c   Cutoff for branching\n\
-                 Format is <cutoff>, where:\n\
-                   - <cutoff> is the distance threshold for branching the hierarchical clustering solution\n\
-                 If no -c option is specified, srnap calculates the optimal cutoff\n\
-                 [ No default value ]\n\n\
             -x   Distance file\n\
                  Format is <distance_file>, where:\n\
                    - <distance_file> is the file with pairwise distances between profiles\n\
@@ -84,7 +74,6 @@ Options   :\n\
                  [ No default value ]\n\n\
 Output    :\n\
             output_folder/crosscorr.dat    : List of distances between pairs of profiles (only if no distance file is provided)\n\
-            output_folder/clusters.neWick  : List of clustered profiles\n\
             output_folder/annotation.bed   : List of annotated features in BED file (only if annotation file is provided)\n\n\
 Examples  :\n\
             srnap annotate -a hsap_micrornas.bed profiles.dat output_dir\n\

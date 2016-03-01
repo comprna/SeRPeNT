@@ -33,10 +33,10 @@ typedef struct {
   char profiles_f_path[MAX_PATH];
   int annotation;
   char annotation_f_path[MAX_ANNOTATIONS][MAX_PATH];
-  char species[MAX_FEATURE];
-  int additional_profiles;
-  char additional_profiles_f_path[MAX_PATH];
-  double cluster_cutoff;
+  //char species[MAX_FEATURE];
+  //int additional_profiles;
+  //char additional_profiles_f_path[MAX_PATH];
+  //double cluster_cutoff;
   double overlap_ftop;
   double overlap_ptof;
   int correlations;
@@ -72,6 +72,7 @@ typedef struct {
   double idr_score;
   int tstart;
   int tend;
+  int olength;
 } profile_struct;
 
 /*
@@ -84,8 +85,8 @@ typedef struct {
   int end;
   int length;
   int32_t strand;
-  int additional;
-  char species[MAX_FEATURE];
+  //int additional;
+  //char species[MAX_FEATURE];
   char annotation[MAX_FEATURE];
   char tmp_annotation[MAX_FEATURE];
   int cluster;

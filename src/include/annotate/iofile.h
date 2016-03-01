@@ -24,18 +24,6 @@ int wcl (FILE *fp);
 int next_profile(FILE* fp, profile_struct_annotation* profile);
 
 /*
- * next_profile
- *   Reads a line of the additional profile file and stores the profile in a given pointer
- *   ID of the profile is preceeded by "species_"
- *
- * @arg 
- *
- * @return
- *   1 if more lines available. 0 if no more lines. -1 if file is ill-formatted.
- */
-int next_additional_profile(FILE* fp, profile_struct_annotation* profile, char* species);
-
-/*
  * next_feature
  *   Reads a line of the BED annotation file and stores the contents in a given pointer
  *

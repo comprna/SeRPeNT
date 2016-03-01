@@ -125,9 +125,6 @@ int next_profile(FILE* fp, profile_struct_annotation* profile)
     return(-1);
   }
 
-  profile->additional = 0;
-  strcpy(profile->species, "\0");
-
   profile->anscore = INT_MIN;
   profile->cluster = -1;
   profile->halo = 0;
@@ -162,112 +159,6 @@ int next_profile(FILE* fp, profile_struct_annotation* profile)
   free(line);
   return(1);
 }
-
-/*
- * next_additional_profile
- *
- * @see src/include/annotate/iofile.h
- */
-int next_additional_profile(FILE* fp, profile_struct_annotation* profile, char* species)
-{
-  char *line = NULL;
-  char *token, *feature, *cline;
-  size_t len = 0;
-  ssize_t read;
-  int i;
-
-  read = getline(&line, &len, fp);
-
-  if (read < 0) {
-    free(line);
-    return(0);
-  }
-
-  cline = (char*) malloc((strlen(line) + 1) * sizeof(char));
-  strcpy(cline, line);
-
-  if ((token = strtok(line, "\t")) == NULL) {
-    free(line);
-    free(cline);
-    return(-1);
-  }
-
-  if ((feature = strtok(token, ":")) == NULL)  {
-    free(line);
-    free(cline);
-    return(-1);
-  }
-  strcpy(profile->chromosome, feature);
-
-  if ((feature = strtok(NULL, "-")) == NULL)  {
-    free(line);
-    free(cline);
-    return(-1);
-  }
-  profile->start = atoi(feature);
-
-  if ((feature = strtok(NULL, ":")) == NULL)  {
-    free(line);
-    free(cline);
-    return(-1);
-  }
-  profile->end = atoi(feature);
-  profile->length = profile->end - profile->start + 1;
-
-  if ((feature = strtok(NULL, ":")) == NULL)  {
-    free(line);
-    free(cline);
-    return(-1);
-  }
-
-  if (strcmp(feature, "+") == 0)
-    profile->strand = FWD_STRAND;
-  else if (strcmp(feature, "-") == 0)
-    profile->strand = REV_STRAND;
-  else {
-    free(line);
-    free(cline);
-    return(-1);
-  }
-
-  profile->additional = 1;
-  strcpy(profile->species, species);
-
-  profile->anscore = INT_MIN;
-  profile->cluster = -1;
-  profile->halo = 0;
-
-  profile->profile = (double*) malloc((profile->end - profile->start + 1) * sizeof(double));
-
-  if ((token = strtok(cline, "\t")) == NULL) {
-    free(line);
-    free(cline);
-    return(-1);
-  }
-
-  for (i = 0; i < (profile->end - profile->start + 1); i++) {
-    if ((token = strtok(NULL, "\t")) != NULL)
-      profile->profile[i] = (double) atof(token);
-    else {
-      free(line);
-      free(cline);
-      return(-1);
-    }
-  }
-
-  profile->max_height = gsl_stats_max(profile->profile, 1, profile->length);
-  profile->mean = gsl_stats_mean(profile->profile, 1, profile->length);
-  profile->variance = gsl_stats_variance(profile->profile, 1, profile->length);
-  gnoise(profile->profile, profile->mean, profile->variance, profile->noise, MAX_PROFILE_LENGTH);
-  strncpy(profile->annotation, "unknown", MAX_FEATURE);
-  strncpy(profile->tmp_annotation, "unknown", MAX_FEATURE);
-  profile->category = NOVEL;
-
-  free(line);
-  free(cline);
-  return(1);
-}
-
 
 /*
  * next_feature

@@ -11,7 +11,7 @@ int parse_command_line_c(int argc, char** argv, char** error_message, args_a_str
   char carg;
   int terminate = 0;
 
-  while(((carg = getopt(argc, argv, "hva:d:c:o:x:")) != -1) && (terminate >= 0)) {
+  while(((carg = getopt(argc, argv, "hva:o:x:")) != -1) && (terminate >= 0)) {
     switch (carg) {
       case 'h':
         terminate--;
@@ -23,12 +23,6 @@ int parse_command_line_c(int argc, char** argv, char** error_message, args_a_str
         break;
       case 'a':
         terminate = parse_annotation_parameters(optarg, error_message, arguments);
-        break;
-      case 'd':
-        terminate = parse_additional_profiles_parameters(optarg, error_message, arguments);
-        break;
-      case 'c':
-        terminate = parse_threshold_parameters(optarg, error_message, arguments);
         break;
       case 'o':
         terminate = parse_overlapping_parameters(optarg, error_message, arguments);
@@ -71,47 +65,6 @@ int parse_annotation_parameters(char* option, char** error_message, args_a_struc
   while((token = strtok(NULL, ":")) != NULL)
     strncpy(arguments->annotation_f_path[arguments->annotation++], token, MAX_PATH);
 
-  return(0);
-}
-
-/*
- * parse_additional_profiles_parameters
- *
- * @see src/include/annotate/paramclust.h
- */
-int parse_additional_profiles_parameters(char* option, char** error_message, args_a_struct* arguments)
-{
-  char* token;
-  
-  if ((token = strtok(option, ":")) == NULL) {
-    *error_message = ERR_INVALID_d_VALUE;
-    return(-1);
-  }
-  strncpy(arguments->species, token, MAX_FEATURE);
-
-  if ((token = strtok(NULL, ":")) == NULL) {
-    *error_message = ERR_INVALID_d_VALUE;
-    return(-1);
-  }
-  strncpy(arguments->additional_profiles_f_path, token, MAX_PATH);
-
-  arguments->additional_profiles = 1;
-
-  return(0);
-}
-
-/*
- * parse_cutoff_parameters
- *
- * @see src/include/annotate/paramclust.h
- */
-int parse_threshold_parameters(char* option, char** error_message, args_a_struct* arguments)
-{
-  arguments->cluster_cutoff = atof(option);
-  if (arguments->cluster_cutoff < 0) {
-    *error_message = ERR_INVALID_c_VALUE;
-    return(-1);
-  }
   return(0);
 }
 
