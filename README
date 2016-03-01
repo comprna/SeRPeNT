@@ -98,23 +98,11 @@ The srnap subcommands include:
                    - <annotation_file> is a BED file with annotated features
                  [ No default value ]
 
-            -d   Additional profiles file
-                 Format is <species:profiles_file>, where:
-                   - <species> is the name of the species where the profiles comes from. e.g. hsap.
-                   - <profiles_file> is a profiles file
-                 [ No default value ]
-
             -o   Overlapping parameters
                  Format is <feature_to_profile:profile_to_feature>, where:
                    - <feature_to_profile> is the percentage of nucleotides from the feature that overlap the profile
                    - <profile_to_feature> is the percentage of nucleotides from the profile that overlap the feature
                  [ Default is 0.9:0.5 ]
-
-            -c   Cutoff for branching
-                 Format is <cutoff>, where:
-                   - <cutoff> is the distance threshold for branching the hierarchical clustering solution
-                 If no -c option is specified, srnap calculates the optimal cutoff
-                 [ No default value ]
 
             -x   Distance file
                  Format is <distance_file>, where:
@@ -126,9 +114,7 @@ The srnap subcommands include:
 
   output_folder/crosscorr.dat    : List of distances between pairs of profiles (only if no distance file is provided)
 
-  output_folder/clusters.neWick  : List of clustered profiles
-
-  output_folder/annotation.bed   : List of annotated features in BED file (only if annotation file is provided)
+  output_folder/annotation.bed   : List of annotated features in BED file
 
 **Example** :
 
