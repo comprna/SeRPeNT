@@ -54,5 +54,5 @@ void trim(profile_struct* profile, args_p_struct* arguments)
     profile->end = profile->end - startfp;
   }
 
-  profile->valid = ((profile->length >= arguments->min_len) && (profile->length <= arguments->max_len) && (max_height >= arguments->min_reads));
+  profile->valid = ((profile->length >= arguments->min_len) && (max_height >= arguments->min_reads));
 }

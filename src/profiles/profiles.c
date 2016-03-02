@@ -452,8 +452,89 @@ int profiles_sc(int argc, char **argv)
     if (profile.valid)
       trim(&profile, &arguments);
 
+    // Internal trim if profile is too long
+    if ((profile.valid) && (profile.length > arguments.max_len)) {
+      double max_height = gsl_stats_max(profile.profile, 1, profile.olength);
+      double threshold = max_height * arguments.trim_threshold;
+      int ix, jx;
+      int pstart, pend;
+      int sstart, send;
+
+      // Initialize
+      pstart = -1; pend = -1;
+      sstart = -1; send = -1;
+
+      // Iterate through profile
+      for (ix = profile.tstart; ix <= profile.tend; ix++) {
+ 
+        // Profile
+        if ((profile.profile[ix] >= arguments.trim_max) || ((profile.profile[ix] > arguments.trim_min && profile.profile[ix] > threshold))) {
+          if (pstart == -1) {
+            pstart = ix;
+          }
+          else if (sstart != -1) {
+            send = ix - 1;
+            if ((send - sstart + 1) > arguments.spacing) { // print profile part if proceeds
+              max_height = -1;
+              for (jx = pstart; jx <= pend; jx++)
+                if (max_height < profile.profile[jx]) max_height = profile.profile[jx];
+              if (((pend - pstart + 1) >= arguments.min_len) && ((pend - pstart + 1) <= arguments.max_len) && (max_height >= arguments.min_reads)) {
+                int prfps, prfpe;
+                if (profile.strand == FWD_STRAND) {
+                  prfps = profile.start + (pstart - profile.tstart);
+                  prfpe = profile.start + (pend - profile.tstart);
+                }
+                else {
+                  prfpe = profile.end - (pstart - profile.tstart);
+                  prfps = profile.end - (pend - profile.tstart);
+                }
+                fprintf(profiles_file, "%s:%d-%d:%s", profile.chromosome, prfps, prfpe, STR(profile.strand));
+                for (jx = pstart; jx <= pend; jx++)
+                  fprintf(profiles_file, "\t%f", profile.profile[jx]);
+                fprintf(profiles_file, "\n");
+              }
+              sstart = -1; send = -1;
+              pstart = ix; pend = -1;
+            }
+            else {
+              sstart = -1; send = -1;
+              pend = -1;
+            }
+          }
+        }
+
+        // Empty space
+        else {
+          if (sstart == -1) {
+            sstart = ix;
+            pend = ix - 1;
+          }
+        }
+      }
+
+      max_height = -1;
+      pend = ix - 1;
+      for (jx = pstart; jx <= pend; jx++)
+        if (max_height < profile.profile[jx]) max_height = profile.profile[jx];
+      if (((pend - pstart + 1) >= arguments.min_len) && ((pend - pstart + 1) <= arguments.max_len) && (max_height >= arguments.min_reads)) {
+        int prfps, prfpe;
+        if (profile.strand == FWD_STRAND) {
+          prfps = profile.start + (pstart - profile.tstart);
+          prfpe = profile.start + (pend - profile.tstart);
+        }
+        else {
+          prfpe = profile.end - (pstart - profile.tstart);
+          prfps = profile.end - (pend - profile.tstart);
+        }
+        fprintf(profiles_file, "%s:%d-%d:%s", profile.chromosome, prfps, prfpe, STR(profile.strand));
+        for (jx = pstart; jx <= pend; jx++)
+          fprintf(profiles_file, "\t%f", profile.profile[jx]);
+        fprintf(profiles_file, "\n");
+      }
+    }
+
     // Print profile
-    if (profile.valid) {
+    else if ((profile.valid) && (profile.length <= arguments.max_len)) {
       fprintf(profiles_file, "%s:%d-%d:%s", profile.chromosome, profile.start, profile.end, STR(profile.strand));
       for (i = profile.tstart; i <= profile.tend; i++)
         fprintf(profiles_file, "\t%f", profile.profile[i]);

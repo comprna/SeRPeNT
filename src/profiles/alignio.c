@@ -221,6 +221,7 @@ int next_tmprofile(FILE* fp, profile_struct* profile)
   }
   profile->end = atoi(token);
   profile->length = profile->end - profile->start + 1;
+  profile->olength = profile->length;
 
   if ((token = strtok(NULL, "\t")) == NULL) {
     free(line);
