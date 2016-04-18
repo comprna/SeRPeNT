@@ -2,16 +2,16 @@ CC = gcc
 CFLAGS = -O3 -c -Wall
 OBJS = build/profiles.o build/paramprof.o build/bheap.o build/idr.o build/alignio.o build/trimming.o build/xcorr.o build/iofile.o build/paramclust.o build/cluster.o build/hierarchical.o build/itvltree.o build/dtw.o build/strmap.o build/profilemap.o build/annotation.o build/dclust.o build/annotate.o build/diffproc.o build/paramdiff.o build/diffprocio.o build/npstats.o
 
-all : srnap
+all : serpent
 
 
 # Build and compile executables
  
-srnap : profiles.o annotate.o diffproc.o srnap.o
-	$(CC) -o bin/srnap $(OBJS) build/srnap.o -Llib/ -lgsl -lgslcblas -lm -lz -lpthread -lbam 
+serpent : profiles.o annotate.o diffproc.o serpent.o
+	$(CC) -o bin/serpent $(OBJS) build/serpent.o -Llib/ -lgsl -lgslcblas -lm -lz -lpthread -lbam 
 
-srnap.o : setup
-	$(CC) $(CFLAGS) src/srnap.c -Isrc/include -o build/srnap.o
+serpent.o : setup
+	$(CC) $(CFLAGS) src/srnap.c -Isrc/include -o build/serpent.o
 
 
 # Compile shared objects

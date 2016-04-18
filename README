@@ -1,8 +1,8 @@
-## **srnap** - A suite of tools for ncRNA discovery, profiling, annotation and analysis from small RNA-Seq data ##
+## **SeRPeNT** - A suite of tools for ncRNA discovery, profiling, annotation and analysis from small RNA-Seq data ##
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-The srnap subcommands include:
+The serpent subcommands include:
 
 **Profiling and annotation tools** :
 
@@ -16,13 +16,13 @@ The srnap subcommands include:
 
   -h, --help :  Print this help menu
 
-  -v, --version : What version of srnap are you using?
+  -v, --version : What version of serpent are you using?
 
 **Examples** :
 
-  srnap profiles replicate1.bam replicate2.bam replicate3.bam output_dir
-  srnap annotate output_dir/profiles.dat annotation.gtf output_dir
-  srnap diffproc condition_a_profiles.dat condition_a_annotation.bed condition_b_profiles.dat condition_b_annotation.bed output_dir
+  serpent profiles replicate1.bam replicate2.bam replicate3.bam output_dir
+  serpent annotate output_dir/profiles.dat annotation.gtf output_dir
+  serpent diffproc condition_a_profiles.dat condition_a_annotation.bed condition_b_profiles.dat condition_b_annotation.bed output_dir
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Tool** : profiles
@@ -31,7 +31,7 @@ The srnap subcommands include:
 
 **Usage** :
 
-  srnap profiles [OPTIONS] replicate_1.bam ... replicate_n.bam output_folder
+  serpent profiles [OPTIONS] replicate_1.bam ... replicate_n.bam output_folder
 
 **Options**  :
 
@@ -81,7 +81,7 @@ The srnap subcommands include:
 
 **Examples** : 
 
-  srnap profiles -f 20 -i sere:2 -r pool -t 0.1:5:20 -p 20:200:39:100 replicate1.bam replicate2.bam output_dir
+  serpent profiles -f 20 -i sere:2 -r pool -t 0.1:5:20 -p 20:200:39:100 replicate1.bam replicate2.bam output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Tool** : annotate
 
@@ -89,7 +89,7 @@ The srnap subcommands include:
 
 **Usage** :
 
-  srnap annotate [OPTIONS] profiles_file.dat output_folder
+  serpent annotate [OPTIONS] profiles_file.dat output_folder
 
 **Options** : 
 
@@ -118,8 +118,8 @@ The srnap subcommands include:
 
 **Example** :
 
-  srnap annotate -a hsap_micrornas.bed profiles.dat output_dir
-  srnap annotate -a hsap_micrornas.bed -x crosscor.dat profiles.dat output_dir
+  serpent annotate -a hsap_micrornas.bed profiles.dat output_dir
+  serpent annotate -a hsap_micrornas.bed -x crosscor.dat profiles.dat output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Tool** : diffproc
 
@@ -127,14 +127,14 @@ The srnap subcommands include:
 
 **Usage** :
 
-  srnap diffproc [OPTIONS] profiles_file_1.dat clustering_file_1.bed profile_file_2.dat clustering_file_2.bed output_folder
+  serpent diffproc [OPTIONS] profiles_file_1.dat clustering_file_1.bed profile_file_2.dat clustering_file_2.bed output_folder
 
 **Options** :
 
             -g   p-value and distance fold-change threshold
                  Format is <pvalue:foldchange> where:
                    - <pvalue> is the p-value threshold for filtering differentially processed profiles
-                   - <foldchange> is the distance fold-change threshold for filtering differentially processed clusters
+                   - <foldchange> is the distance fold-change threshold for filtering differentially processed profiles
                  [ Default is 0.01:0.5 ]
 
 **Output** :
@@ -143,5 +143,5 @@ The srnap subcommands include:
 
 **Examples** :
 
-  srnap diffproc -g 0.01:5 wild_type/profiles.dat wild_type/annotation.bed treated/profiles.dat treated/annotation.bed output_dir
+  serpent diffproc -g 0.01:5 wild_type/profiles.dat wild_type/annotation.bed treated/profiles.dat treated/annotation.bed output_dir
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
